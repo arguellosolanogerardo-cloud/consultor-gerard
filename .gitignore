@@ -1,0 +1,11 @@
+# Ignorar secretos y entornos virtuales
+.streamlit/secrets.toml
+venv/
+__pycache__/
+.pytest_cache/
+.env
+chroma_db/
+chroma_db.zip
+gerard_log.txt
+# Si no quieres subir los archivos .srt (datos), descomenta la siguiente línea:
+# documentos_srt/
