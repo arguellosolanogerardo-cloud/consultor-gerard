@@ -129,7 +129,7 @@ def get_cleaning_pattern():
     texts_to_remove = [
         '[Spanish (auto-generated)]', '[DownSub.com]', '[Música]', '[Aplausos]'
     ]
-    robust_patterns = [r'\[' + re.escape(text[1:-1]) + r'\]' for text in texts_to_remove]
+    robust_patterns = [r'\[\s*' + re.escape(text[1:-1]) + r'\s*\]' for text in texts_to_remove]
     return re.compile(r'|'.join(robust_patterns), re.IGNORECASE)
 
 cleaning_pattern = get_cleaning_pattern()
@@ -181,11 +181,11 @@ def get_clean_text_from_json(json_string):
 
 
 def detect_gender_from_name(name: str) -> str:
-    '''Heurística simple para detectar género a partir del primer nombre.
+    """Heurística simple para detectar género a partir del primer nombre.
     Regla principal: termina en 'a' -> Femenino, termina en 'o' -> Masculino.
     Usa listas de excepciones comunes para mejorar la precisión.
     Devuelve: 'Masculino', 'Femenino' o 'No especificar'.
-    '''
+    """
     if not name or not name.strip():
         return 'No especificar'
     # Normalizar y tomar primer token
@@ -215,8 +215,7 @@ def save_to_log(user, question, answer_json, location):
     clean_answer = get_clean_text_from_json(answer_json)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open("gerard_log.txt", "a", encoding="utf-8") as f:
-        f.write(f"---" Conversación del {timestamp} ---
-")
+        f.write(f"--- Conversación del {timestamp} ---\n")
         f.write(f"Usuario: {user}\n")
         f.write(f"Ubicación: {location}\n")
         f.write(f"Pregunta: {question}\n")
@@ -353,4 +352,105 @@ if 'messages' not in st.session_state:
 
 if not st.session_state.user_name:
     st.markdown('''
-    <p class=
+    <p class="intro-text" style="font-size:1.8em; line-height:1.05;">
+    Hola, soy GERARD tu asistente especializado en los mensajes y meditaciones de los 9 Maestros: <strong>ALANISO, AXEL, ALAN, AZEN, AVIATAR, ALADIM, ADIEL, AZOES Y ALIESTRO</strong>.
+    <br>
+    Las tres grandes energias el Padre Amor, la Gran Madre y el Gran Maestro Jesus.
+    </p>
+    <p style="text-align:center; margin-top:12px; font-size:1.25em; text-transform:uppercase; font-weight:bold;">
+    TE AYUDARE A ENCONTRAR CON PRECISIÓN EL MINUTO Y SEGUNDO EXACTO EN CADA AUDIO O ENSEÑANZAS QUE YA HAYAS ESCUCHADO ANTERIORMENTE ENTRE LAS CIENTOS DE MEDITACIONES Y MENSAJES CANALIZADOS POR SARITA OTERO. PERO QUE EN EL MOMENTO NO RECUERDAS EXACTAMENTE Y ESTÉS BUSCANDO EN TU ARDUO ESTUDIO DE ENCONTRAR NUEVOS MENSAJES DENTRO DE LOS MENSAJES COMO ESTUDIANTE ALANISO AVANZADO.
+    <br>
+    <span style="color:red;">PARA COMENZAR, POR FAVOR INTRODUCE TU NOMBRE Y TE DARÉ ACCESO PARA QUE PUEDAS HACER TUS PREGUNTAS.</span>
+    </p>
+    ''', unsafe_allow_html=True)
+    
+    st.markdown('<div style="text-align:center; margin-top:8px;"><span class="green-pulse">TU NOMBRE</span></div>', unsafe_allow_html=True)
+    user_name_input = st.text_input("Tu Nombre", key="name_inputter", label_visibility="collapsed")
+    if user_name_input:
+        st.session_state.user_name = user_name_input.upper()
+        # Detección automática del género desde el nombre
+        detected = detect_gender_from_name(user_name_input)
+        # Permitir confirmar o corregir la detección
+        confirm_options = [detected]
+        for opt in ("Masculino", "Femenino", "No especificar"):
+            if opt not in confirm_options:
+                confirm_options.append(opt)
+
+        chosen = st.selectbox("Detecté el género: seleccione para confirmar o corregir", options=confirm_options, index=0, key="gender_confirm")
+        st.session_state.user_gender = chosen
+        st.rerun()
+else:
+    # Construir bienvenida flexible según género seleccionado
+    gender = st.session_state.get('user_gender', 'No especificar')
+    if gender == 'Masculino':
+        bienvenida = 'BIENVENIDO'
+    elif gender == 'Femenino':
+        bienvenida = 'BIENVENIDA'
+    else:
+        bienvenida = 'BIENVENID@'
+
+    st.markdown(f'''
+    <div class="welcome-text">{bienvenida} {st.session_state.user_name}</div>
+    <p class="sub-welcome-text">AHORA YA PUEDES REALIZAR TUS PREGuntas EN LA PARTE INFERIOR</p>
+    ''', unsafe_allow_html=True)
+
+# --- Mostrar historial con avatares personalizados ---
+for message in st.session_state.messages:
+    avatar = user_avatar if message["role"] == "user" else assistant_avatar
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"], unsafe_allow_html=True)
+
+# --- Input del usuario con avatares personalizados ---
+if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
+    if not st.session_state.user_name:
+        st.warning("Por favor, introduce tu nombre para continuar.")
+    else:
+        # --- ¡AQUÍ ESTÁ EL CAMBIO! ---
+        # Se reemplaza la imagen por un texto animado con CSS
+        styled_prompt = f'''
+        <div style="display: flex; align-items: center; justify-content: flex-start;">
+            <span style="text-transform: uppercase; color: orange; margin-right: 8px; font-weight: bold;">{prompt_input}</span>
+            <span class="pulsing-q">?</span>
+        </div>
+        '''
+        
+        st.session_state.messages.append({"role": "user", "content": styled_prompt})
+        
+        with st.chat_message("user", avatar=user_avatar):
+            st.markdown(styled_prompt, unsafe_allow_html=True)
+
+        with st.chat_message("assistant", avatar=assistant_avatar):
+            response_placeholder = st.empty()
+            loader_html = '''
+            <div class="loader-container">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                <span style='margin-left: 10px; font-style: italic; color: #888;'>Buscando...</span>
+            </div>
+            '''
+            response_placeholder.markdown(loader_html, unsafe_allow_html=True)
+
+            try:
+                answer_json = retrieval_chain.invoke(prompt_input)
+                save_to_log(st.session_state.user_name, prompt_input, answer_json, location)
+                
+                match = re.search(r'\[.*\]', answer_json, re.DOTALL)
+                if not match:
+                    st.error("La respuesta del modelo no fue un JSON válido.")
+                    response_html = f'<p style="color:red;">{answer_json}</p>'
+                else:
+                    data = json.loads(match.group(0))
+                    response_html = f'<strong style="color:#28a745;">{st.session_state.user_name}:</strong> '
+                    for item in data:
+                        content_type = item.get("type", "normal")
+                        content = item.get("content", "")
+                        if content_type == "emphasis":
+                            response_html += f'<span style="color:yellow; background-color: #333; border-radius: 4px; padding: 2px 4px;">{content}</span>'
+                        else:
+                            content_html = re.sub(r'(\(\s*.*?\s*\))', r'<span style="color:#87CEFA;">\1</span>', content)
+                            response_html += content_html
+                
+                response_placeholder.markdown(response_html, unsafe_allow_html=True)
+                st.session_state.messages.append({"role": "assistant", "content": response_html})
+
+            except Exception as e:
+                response_placeholder.error(f"Ocurrió un error al procesar tu pregunta: {e}")
