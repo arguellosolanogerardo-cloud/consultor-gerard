@@ -21,7 +21,7 @@ if "GOOGLE_API_KEY" not in os.environ:
 
 # --- Usamos el modelo 'pro' que es mejor para seguir instrucciones complejas como JSON ---
 api_key = os.environ.get("GOOGLE_API_KEY")
-llm = GoogleGenerativeAI(model="models/gemini-2.5-pro", google_api_key=api_key)
+llm = GoogleGenerativeAI(model="gemini-1.5-pro-latest", google_api_key=api_key)
 vectorstore = Chroma(
     persist_directory="./chroma_db",
     embedding_function=GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key),

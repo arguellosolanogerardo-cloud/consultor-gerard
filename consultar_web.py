@@ -74,7 +74,7 @@ def load_llm_and_key():
         )
         st.stop()
     
-    llm = GoogleGenerativeAI(model="models/gemini-1.5-pro-latest", google_api_key=api_key)
+    llm = GoogleGenerativeAI(model="gemini-1.5-pro-latest", google_api_key=api_key)
     return llm, api_key
 
 llm, api_key = load_llm_and_key()
