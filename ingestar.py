@@ -1,51 +1,117 @@
+"""
+Este script se encarga de procesar documentos de texto (en formato .srt),
+dividirlos en fragmentos (chunks) y crear una base de datos vectorial utilizando FAISS.
+Los embeddings se generan utilizando la API de Google Generative AI.
+
+Funcionalidades:
+- Carga de variables de entorno para la clave de API de Google.
+- Lee todos los archivos .srt de un directorio especificado.
+- Divide el texto de los documentos en fragmentos más pequeños para su procesamiento.
+- Genera embeddings para cada fragmento de texto y los almacena en un índice FAISS.
+- Guarda el índice FAISS en el disco para su uso posterior.
+- Maneja los límites de tasa de la API introduciendo pausas entre las solicitudes.
+
+Uso:
+- Asegúrate de tener un archivo .env con tu GOOGLE_API_KEY.
+- Ejecuta el script con `python ingestar.py`.
+- El script creará un directorio 'faiss_index' con la base de datos vectorial.
+"""
+
 import os
-from dotenv import load_dotenv
-
-# --- CAMBIOS IMPORTANTES AQUÍ ---
-# Ahora importamos TextLoader para forzar la lectura como texto
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader, TextLoader
+from dotenv import load_dotenv
+import google.generativeai as genai
+import time
+from tqdm import tqdm
 
-# --- 1. Carga la API Key ---
+# Cargar variables de entorno
 load_dotenv()
-if "GOOGLE_API_KEY" not in os.environ:
-    print("Error: La variable de entorno GOOGLE_API_KEY no está configurada.")
+api_key = os.getenv("GOOGLE_API_KEY")
+
+# Configurar la API de Google
+if api_key:
+    genai.configure(api_key=api_key)
+else:
+    print("No se encontró la clave de API para Google. Por favor, configura la variable de entorno GOOGLE_API_KEY.")
     exit()
 
-# --- 2. Carga de los Documentos (VERSIÓN CORREGIDA) ---
-print("Cargando documentos en modo texto...")
+# Ruta al directorio con los documentos .srt
+DATA_PATH = "documentos_srt/"
+FAISS_INDEX_PATH = "faiss_index"
 
-# Le decimos a DirectoryLoader que use TextLoader para todos los archivos.
-# Añadimos encoding='utf-8' para manejar correctamente acentos y caracteres especiales.
-loader = DirectoryLoader(
-    './documentos_srt/', 
-    glob="**/*.srt", 
-    loader_cls=TextLoader, 
-    loader_kwargs={'encoding': 'utf-8'}
-)
+def get_srt_text(data_path):
+    """
+    Carga el texto de todos los documentos .srt desde el directorio especificado.
+    """
+    doc_counter = 0
+    full_text = ""
+    for filename in os.listdir(data_path):
+        if filename.endswith(".srt"):
+            file_path = os.path.join(data_path, filename)
+            try:
+                loader = TextLoader(file_path, encoding='utf-8')
+                documents = loader.load()
+                full_text += "\n" + documents[0].page_content
+                doc_counter += 1
+            except Exception as e:
+                print(f"Error al leer el archivo {filename}: {e}")
+    print(f"Se cargaron {doc_counter} documentos.")
+    return full_text
 
-docs = loader.load()
+def get_text_chunks(text):
+    """
+    Divide el texto en fragmentos más pequeños.
+    """
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
+    chunks = text_splitter.split_text(text)
+    print(f"Documentos divididos en {len(chunks)} trozos.")
+    return chunks
 
-if not docs:
-    print("No se encontraron documentos .srt en la carpeta especificada.")
-    exit()
+def get_vector_store(text_chunks):
+    """
+    Crea y guarda la base de datos vectorial FAISS a partir de los fragmentos de texto.
+    Maneja los límites de tasa de la API con pausas y muestra el progreso.
+    """
+    try:
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        
+        # Procesar en lotes para evitar sobrecargar la API
+        batch_size = 50
+        vector_store = None
 
-print(f"Se cargaron {len(docs)} documentos.")
+        print("Creando base de datos vectorial. Esto puede tardar varios minutos...")
+        
+        # Usar tqdm para mostrar una barra de progreso
+        for i in tqdm(range(0, len(text_chunks), batch_size)):
+            batch = text_chunks[i:i + batch_size]
+            if vector_store is None:
+                vector_store = FAISS.from_texts(batch, embedding=embeddings)
+            else:
+                vector_store.add_texts(batch)
+            
+            # Pausa para respetar el límite de tasa de la API (ej. 60 solicitudes por minuto)
+            time.sleep(1) 
 
-# --- 3. División del Texto ---
-print("Dividiendo documentos en trozos...")
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-splits = text_splitter.split_documents(docs)
-print(f"Documentos divididos en {len(splits)} trozos.")
+        vector_store.save_local(FAISS_INDEX_PATH)
+        print(f"Base de datos vectorial creada y guardada en '{FAISS_INDEX_PATH}'.")
 
-# --- 4. Creación de la Base de Datos Vectorial (ChromaDB) ---
-print("Creando la base de datos vectorial con ChromaDB...")
-vectorstore = Chroma.from_documents(
-    documents=splits,
-    embedding=GoogleGenerativeAIEmbeddings(model="models/embedding-001"),
-    persist_directory="./chroma_db"
-)
+    except Exception as e:
+        print(f"Ocurrió un error durante la creación de la base de datos: {e}")
 
-print("¡Proceso completado! La base de conocimiento ha sido creada y guardada en 'chroma_db'.")
+def main():
+    """
+    Función principal que orquesta la carga y procesamiento de documentos.
+    """
+    print("Cargando documentos .srt...")
+    raw_text = get_srt_text(DATA_PATH)
+    
+    if raw_text:
+        print("Dividiéndolos en trozos...")
+        text_chunks = get_text_chunks(raw_text)
+        get_vector_store(text_chunks)
+
+if __name__ == "__main__":
+    main()
