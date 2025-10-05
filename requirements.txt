@@ -4,6 +4,6 @@ langchain-community
 langchain
 python-dotenv
 colorama
-faiss-cpu
+faiss-cpu==1.7.4
 rapidfuzz
-xhtml2pdf
+xhtml2pdf==0.2.11
