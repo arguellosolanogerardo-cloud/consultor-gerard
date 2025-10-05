@@ -4,3 +4,6 @@ langchain-chroma
 python-dotenv
 requests
 colorama
+langchain
+unstructured
+pytesseract
