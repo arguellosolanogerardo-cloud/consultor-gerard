@@ -1,200 +1,164 @@
+"""
+Este script permite interactuar con el Consultor Gerard a través de la terminal.
+
+Carga una base de datos vectorial FAISS y utiliza un modelo de lenguaje de Google (Gemini)
+para responder preguntas. La respuesta se estructura en un resumen seguido de una lista
+de las citas textuales más relevantes que se usaron para generar el resumen.
+
+Funcionalidades:
+- Carga de variables de entorno para la clave de API.
+- Carga el índice FAISS local.
+- Configuración de un modelo de chat que genera un resumen.
+- Mantiene un historial de la conversación.
+- Bucle interactivo para que el usuario haga preguntas.
+- Lógica de post-procesamiento para mostrar los documentos fuente directamente como citas.
+
+Uso:
+- Ejecuta el script con `python consultar_terminal.py`.
+"""
+
 import os
-import json
 import re
-import colorama
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_community.vectorstores import FAISS
+from langchain.chains import ConversationalRetrievalChain
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
-from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_chroma import Chroma
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
-from datetime import datetime
+from colorama import Fore, Style, init
 
-# Inicializamos colorama para que los colores funcionen en todas las terminales
-colorama.init(autoreset=True)
+# Inicializar colorama para que funcione en Windows
+init()
 
-# --- Carga la API Key ---
+# Cargar variables de entorno
 load_dotenv()
-if "GOOGLE_API_KEY" not in os.environ:
-    print("Error: La variable de entorno GOOGLE_API_KEY no está configurada.")
+api_key = os.getenv("GOOGLE_API_KEY")
+
+if not api_key:
+    print(Fore.RED + "No se encontró la clave de API para Google. Por favor, configura la variable de entorno GOOGLE_API_KEY." + Style.RESET_ALL)
     exit()
 
-# --- Usamos el modelo 'pro' que es mejor para seguir instrucciones complejas como JSON ---
-api_key = os.environ.get("GOOGLE_API_KEY")
-llm = GoogleGenerativeAI(model="gemini-1.5-pro-latest", google_api_key=api_key)
-vectorstore = Chroma(
-    persist_directory="./chroma_db",
-    embedding_function=GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key),
-)
+# Ruta al índice FAISS
+FAISS_INDEX_PATH = "faiss_index"
 
-# --- PERSONALIDAD DE "GERARD" (CON PROMPT CORREGIDO) ---
-prompt = ChatPromptTemplate.from_template("""
---- INICIO DE INSTRUCCIONES DE PERSONALIDAD ---
-1. ROL Y PERSONA: Eres "GERARD", un analista de IA que encuentra patrones en textos.
-
-2. CONTEXTO: Analizas archivos .srt sobre temas espirituales y narrativas ocultas.
-
---- REGLA DE FORMATO DE SALIDA (LA MÁS IMPORTANTE) ---
-Tu única forma de responder es generando un objeto JSON. Tu respuesta DEBE ser un array de objetos JSON válido. Cada objeto debe tener dos claves: "type" y "content".
-- "type" puede ser "normal" para texto regular, o "emphasis" para conceptos clave.
-- "content" es el texto en sí.
-
-EJEMPLO DE SALIDA OBLIGATORIA:
-[
-  {{ "type": "normal", "content": "El concepto principal es " }},
-  {{ "type": "emphasis", "content": "la energía Crística" }},
-  {{ "type": "normal", "content": ", que se menciona como el núcleo de la " }},
-  {{ "type": "emphasis", "content": "evolución del alma" }},
-  {{ "type": "normal", "content": ". (Fuente: archivo.srt, Timestamp: 00:01:23 --> 00:01:25)" }}
-]
-Esta regla no es negociable. Tu respuesta completa debe estar dentro de este formato JSON.
-
---- REGLA DE CITA ---
-Incluye las citas de la fuente DENTRO del "content" de un objeto de tipo "normal", como se ve en el ejemplo. El formato es: `(Fuente: nombre_del_archivo.srt, Timestamp: HH:MM:SS --> HH:MM:SS)`.
-
-Comienza tu labor, GERARD. Responde únicamente con el array JSON. No incluyas explicaciones adicionales fuera del JSON.
---- FIN DE INSTRUCCIONES DE PERSONALIDAD ---
-
-Basándote ESTRICTAMENTE en las reglas y el contexto de abajo, responde la pregunta del usuario.
-
-<contexto>
-{context}
-</contexto>
-
-Pregunta del usuario: {input}
-""")
-
-# --- FUNCIÓN PARA FORMATEAR DOCUMENTOS (CON LIMPIEZA REFORZADA) ---
-def get_cleaning_pattern():
-    """Crea un patrón de regex robusto para eliminar textos no deseados."""
-    texts_to_remove = [
-        '[Spanish (auto-generated)]',
-        '[DownSub.com]',
-        '[Música]',
-        '[Aplausos]'
-    ]
-    # Este patrón es más robusto: busca el texto dentro de los corchetes,
-    # permitiendo espacios en blanco opcionales alrededor.
-    robust_patterns = [r'\[\s*' + re.escape(text[1:-1]) + r'\s*\]' for text in texts_to_remove]
-    return re.compile(r'|'.join(robust_patterns), re.IGNORECASE)
-
-cleaning_pattern = get_cleaning_pattern()
-
-def format_docs_with_metadata(docs):
-    """Prepara los documentos recuperados, limpiando robustamente el contenido y los timestamps."""
-    formatted_strings = []
-    for doc in docs:
-        source_filename = os.path.basename(doc.metadata.get('source', 'Fuente desconocida'))
-        
-        # 1. Limpieza de textos no deseados
-        cleaned_content = cleaning_pattern.sub('', doc.page_content)
-
-        # 2. ¡NUEVO! Eliminar milisegundos de los timestamps
-        # El patrón busca HH:MM:SS,ms y lo reemplaza con HH:MM:SS
-        cleaned_content = re.sub(r'(\d{2}:\d{2}:\d{2}),\d{3}', r'\1', cleaned_content)
-        
-        # 3. Limpieza de líneas vacías
-        cleaned_content = "\n".join(line for line in cleaned_content.split('\n') if line.strip())
-        
-        if cleaned_content:
-            formatted_strings.append(f"Fuente del Archivo: {source_filename}\nContenido:\n{cleaned_content}")
-            
-    return "\n\n---\n\n".join(formatted_strings)
-
-# --- Cadena de recuperación (LCEL) ---
-retriever = vectorstore.as_retriever()
-retrieval_chain = (
-    {
-        "context": (lambda x: x["input"]) | retriever | format_docs_with_metadata,
-        "input": (lambda x: x["input"])
-    }
-    | prompt
-    | llm
-    | StrOutputParser()
-)
-
-# --- NUEVA FUNCIÓN para convertir el JSON a texto plano para el log ---
-def get_clean_text_from_json(json_string):
-    """Convierte la respuesta JSON en una cadena de texto simple y legible."""
+def get_conversational_chain():
+    """
+    Configura y retorna la cadena de conversación y recuperación (RAG).
+    """
     try:
-        match = re.search(r'\[.*\]', json_string, re.DOTALL)
-        if not match:
-            return json_string
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", task_type="retrieval_query")
+        vector_store = FAISS.load_local(FAISS_INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
+        llm = ChatGoogleGenerativeAI(model="models/gemini-pro-latest", temperature=0.7)
 
-        data = json.loads(match.group(0))
-        full_text = "".join([item.get("content", "") for item in data])
-        return full_text
-    except:
-        return json_string
+        # Un prompt más simple que se enfoca en generar un buen resumen.
+        prompt_template = """Eres un asistente servicial llamado GERARD. Tu tarea es responder la pregunta del usuario de forma coherente y útil, creando un resumen basado únicamente en el siguiente contexto. No inventes información. Si no sabes la respuesta, di que no has encontrado información suficiente.
 
-# --- NUEVA FUNCIÓN para guardar la conversación en un archivo ---
-def save_to_log(question, user, answer_json):
-    """Guarda la pregunta y la respuesta en un archivo de registro."""
-    clean_answer = get_clean_text_from_json(answer_json)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:M:%S")
-    
-    with open("gerard_log.txt", "a", encoding="utf-8") as f:
-        f.write(f"--- Conversación del {timestamp} ---\n")
-        f.write(f"Usuario: {user}\n")
-        f.write(f"Pregunta: {question}\n")
-        f.write(f"Respuesta de GERARD: {clean_answer}\n")
-        f.write("="*40 + "\n\n")
+        Contexto:
+        {context}
 
-# --- FUNCIÓN PARA IMPRIMIR LA RESPUESTA CON MÚLTIPLES COLORES ---
-def print_json_answer(json_string):
-    # Failsafe: volvemos a limpiar la respuesta final por si acaso
-    cleaned_string = cleaning_pattern.sub('', json_string)
-    
-    try:
-        match = re.search(r'\[.*\]', cleaned_string, re.DOTALL)
-        if not match:
-            print(f"{colorama.Fore.RED}Respuesta no es un JSON válido:\n{cleaned_string}")
-            return
+        Pregunta: {question}
 
-        data = json.loads(match.group(0))
+        Respuesta de GERARD:"""
         
-        for item in data:
-            content_type = item.get("type", "normal")
-            content = item.get("content", "")
-            
-            if content_type == "emphasis":
-                print(f"{colorama.Fore.YELLOW}{content}", end="")
-            else:
-                parts = re.split(r'(\(.*?\))', content)
-                for part in parts:
-                    if part.startswith('(') and part.endswith(')'):
-                        print(f"{colorama.Fore.MAGENTA}{part}", end="")
-                    else:
-                        print(f"{colorama.Style.RESET_ALL}{part}", end="")
-        print()
-    except json.JSONDecodeError:
-        print(f"{colorama.Fore.RED}Error: El modelo no devolvió un JSON válido. Respuesta recibida:\n{cleaned_string}")
+        QA_PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+
+        memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True, output_key='answer')
+        
+        chain = ConversationalRetrievalChain.from_llm(
+            llm=llm,
+            retriever=vector_store.as_retriever(),
+            memory=memory,
+            return_source_documents=True,
+            combine_docs_chain_kwargs={"prompt": QA_PROMPT}
+        )
+        return chain
     except Exception as e:
-        print(f"{colorama.Fore.RED}Ocurrió un error inesperado al procesar la respuesta: {e}")
+        print(Fore.RED + f"Error al cargar la cadena de conversación: {e}" + Style.RESET_ALL)
+        return None
 
-# --- Bucle de Interacción ---
-print("GERARD listo. Escribe tu pregunta o 'salir' para terminar.")
+def clean_source_name(source_name):
+    """Limpia el nombre de un archivo fuente de textos repetitivos."""
+    prefixes_to_remove = ["[Spanish (auto-generated)]", "[Spanish (Latin America)]", "[Spanish]"]
+    for prefix in prefixes_to_remove:
+        if source_name.startswith(prefix):
+            source_name = source_name[len(prefix):].strip()
+    
+    if source_name.endswith("[DownSub.com].srt"):
+        source_name = source_name[:-len("[DownSub.com].srt")].strip()
+    
+    return source_name
 
-# --- ¡NUEVO! Pedir el nombre del usuario una sola vez al inicio ---
-user_name = input("Por favor, introduce tu nombre para comenzar: ")
+def clean_srt_content(text):
+    """Elimina los números de secuencia y timestamps de un fragmento de SRT."""
+    # Eliminar timestamps (e.g., 00:00:20,000 --> 00:00:25,000)
+    text = re.sub(r'\d{2}:\d{2}:\d{2},\d{3}\s+-->\s+\d{2}:\d{2}:\d{2},\d{3}', '', text)
+    # Eliminar números de secuencia al inicio de las líneas
+    text = re.sub(r'^\d+\s*$', '', text, flags=re.MULTILINE)
+    # Eliminar líneas vacías resultantes
+    return '\n'.join(line for line in text.split('\n') if line.strip()).strip()
 
-while True:
-    # --- ¡MODIFICADO! Usar el nombre personalizado en el prompt ---
-    prompt_text = f"\nTu pregunta {colorama.Fore.BLUE}{user_name.upper()}{colorama.Style.RESET_ALL}: "
-    pregunta = input(prompt_text)
+def main():
+    """
+    Función principal que maneja el bucle de interacción con el usuario.
+    """
+    chain = get_conversational_chain()
+    if not chain:
+        return
 
-    if pregunta.lower() == 'salir':
-        break
+    print(Fore.CYAN + "GERARD listo. Escribe tu pregunta o 'salir' para terminar." + Style.RESET_ALL)
+    
+    user_name = input("Por favor, introduce tu nombre para comenzar: ")
+    print(Fore.GREEN + f"\n¡Hola, {user_name}! Puedes empezar a preguntar." + Style.RESET_ALL)
 
-    print("Buscando...")
-    try:
-        answer = retrieval_chain.invoke({"input": pregunta})
-        print("\nRespuesta de GERARD:")
-        print_json_answer(answer)
+    while True:
+        user_question = input(f"\nTu pregunta {user_name.upper()}: ")
+
+        if user_question.lower() == 'salir':
+            print(Fore.YELLOW + "Gracias por conversar. ¡Hasta luego!" + Style.RESET_ALL)
+            break
         
-        # Guardamos el registro con el nombre del usuario
-        save_to_log(pregunta, user_name.upper(), answer)
+        if user_question:
+            try:
+                print(Fore.YELLOW + "Buscando..." + Style.RESET_ALL)
+                
+                result = chain.invoke({"question": user_question})
+                answer = result["answer"]
+                sources = result.get("source_documents", [])
 
-    except Exception as e:
-        print(f"\n{colorama.Fore.RED}Ocurrió un error al procesar tu pregunta: {e}")
+                print(Fore.GREEN + "\nRespuesta de GERARD:" + Style.RESET_ALL)
+                print(answer) # Imprime el resumen
+
+                # Mostrar las citas textuales directamente de los documentos fuente
+                if sources:
+                    print(Fore.CYAN + "\n--- Citas Textuales ---" + Style.RESET_ALL)
+                    
+                    for doc in sources:
+                        # Extraer la información de la fuente
+                        source_path = doc.metadata.get("source", "Fuente desconocida")
+                        source_file = os.path.basename(source_path)
+                        cleaned_name = clean_source_name(source_file)
+                        
+                        # Extraer y formatear el timestamp
+                        timestamp_match = re.search(r'(\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3})', doc.page_content)
+                        if timestamp_match:
+                            timestamp = timestamp_match.group(0)
+                            short_timestamp = re.sub(r',\d{3}', '', timestamp)
+                            source_info = f"(Fuente: {cleaned_name}, Timestamp: {short_timestamp})"
+                        else:
+                            source_info = f"(Fuente: {cleaned_name}, Timestamp: No disponible)"
+
+                        # Limpiar el contenido del SRT para mostrar solo el texto
+                        quote_text = clean_srt_content(doc.page_content)
+
+                        # Formatear la salida
+                        highlighted_quote = f"{Fore.YELLOW}{quote_text}{Style.RESET_ALL}"
+                        violet_source = f" {Fore.MAGENTA}{source_info}{Style.RESET_ALL}"
+                        
+                        print(f"- {highlighted_quote}{violet_source}\n")
+
+            except Exception as e:
+                print(Fore.RED + f"Ocurrió un error al procesar tu pregunta: {e}" + Style.RESET_ALL)
+
+if __name__ == "__main__":
+    main()
 

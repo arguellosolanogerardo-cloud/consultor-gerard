@@ -1,456 +1,249 @@
-# -*- coding: utf-8 -*-
-import os
-import json
-import re
-import colorama
-from dotenv import load_dotenv
-from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_chroma import Chroma
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
-from datetime import datetime
+"""
+Este script crea una aplicación web utilizando Streamlit para interactuar con el Consultor Gerard.
+
+La respuesta se estructura en un resumen seguido de una lista de las citas textuales
+más relevantes que se usaron para generar el resumen, mostrándolas directamente.
+
+Funcionalidades:
+- Interfaz web creada con Streamlit.
+- Carga de variables de entorno para la clave de API.
+- Carga de una base de datos vectorial FAISS pre-construida.
+- Configuración de un modelo de chat que genera un resumen.
+- Gestión del estado de la sesión para mantener el historial de chat.
+- Lógica de post-procesamiento para mostrar los documentos fuente directamente como citas.
+- Opciones de exportación a .txt y .pdf.
+- Enlaces para compartir la respuesta por Email, WhatsApp y Telegram.
+
+Uso:
+- Ejecuta la aplicación con `streamlit run consultar_web.py`.
+"""
+
 import streamlit as st
-import requests
+import os
+import re
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_community.vectorstores import FAISS
+from langchain.chains import ConversationalRetrievalChain
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import PromptTemplate
+from dotenv import load_dotenv
+from io import BytesIO
+from xhtml2pdf import pisa
+from urllib.parse import quote
 
-# --- IMPORTS ADICIONALES PARA INGESTA ---
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-# --- Configuración Inicial ---
-colorama.init(autoreset=True)
+# Cargar variables de entorno
 load_dotenv()
+api_key = os.getenv("GOOGLE_API_KEY")
 
-# --- LÓGICA DE INGESTA DE DATOS (INTEGRADA) ---
-def ingest_data(api_key):
+if not api_key:
+    st.error("No se encontró la clave de API para Google. Por favor, configura la variable de entorno GOOGLE_API_KEY en los secretos de Streamlit.")
+    st.stop()
+
+# Ruta al índice FAISS
+FAISS_INDEX_PATH = "faiss_index"
+
+@st.cache_resource
+def get_conversational_chain():
     """
-    Función para cargar, dividir y almacenar documentos en ChromaDB si no existe.
+    Carga y configura la cadena de conversación y recuperación (RAG).
     """
-    with st.spinner("Creando base de conocimiento por primera vez. Esto puede tardar unos minutos..."):
-        st.info("Cargando documentos .srt...")
-        try:
-            loader = DirectoryLoader(
-                './documentos_srt/',
-                glob="**/*.srt",
-                loader_cls=TextLoader,
-                loader_kwargs={'encoding': 'utf-8'}
-            )
-            docs = loader.load()
-            if not docs:
-                st.error("No se encontraron documentos .srt en la carpeta 'documentos_srt/'. Asegúrate de que los archivos están en el repositorio.")
-                st.stop()
-            
-            st.info(f"Se cargaron {len(docs)} documentos. Dividiéndolos en trozos...")
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-            splits = text_splitter.split_documents(docs)
-            
-            st.info(f"Documentos divididos en {len(splits)} trozos. Creando base de datos vectorial...")
-            Chroma.from_documents(
-                documents=splits,
-                embedding=GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key),
-                persist_directory="./chroma_db"
-            )
-            st.success("¡Base de conocimiento creada! La aplicación está lista para usarse.")
-            st.info("Recargando la aplicación...")
-            st.rerun() # Forzar recarga para que la app use la nueva DB
-        except Exception as e:
-            st.error(f"Ocurrió un error durante la creación de la base de datos: {e}")
+    try:
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", task_type="retrieval_query")
+        
+        if not os.path.exists(FAISS_INDEX_PATH):
+            st.error(f"La base de datos vectorial no se encuentra en la ruta: {FAISS_INDEX_PATH}. Asegúrate de que la carpeta existe.")
             st.stop()
 
+        vector_store = FAISS.load_local(FAISS_INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
+        
+        llm = ChatGoogleGenerativeAI(model="models/gemini-pro-latest", temperature=0.7)
+        
+        # Un prompt más simple que se enfoca en generar un buen resumen.
+        prompt_template = """Eres un asistente servicial llamado GERARD. Tu tarea es responder la pregunta del usuario de forma coherente y útil, creando un resumen basado únicamente en el siguiente contexto. No inventes información. Si no sabes la respuesta, di que no has encontrado información suficiente.
 
-# --- Carga de Modelos y Base de Datos (con caché de Streamlit) ---
-@st.cache_resource
-def load_llm_and_key():
-    # Preferir la variable de entorno; en Streamlit tomar como fallback st.secrets
-    api_key = os.environ.get("GOOGLE_API_KEY")
-    try:
-        if not api_key and hasattr(st, "secrets"):
-            api_key = st.secrets.get("GOOGLE_API_KEY")
-    except Exception:
-        pass
-    if not api_key:
-        st.error(
-            "Error: La variable de entorno GOOGLE_API_KEY no está configurada. Añade la clave a Streamlit Secrets."
+        Contexto:
+        {context}
+
+        Pregunta: {question}
+
+        Respuesta de GERARD:"""
+
+        QA_PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+
+        memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True, output_key='answer')
+        
+        chain = ConversationalRetrievalChain.from_llm(
+            llm=llm,
+            retriever=vector_store.as_retriever(),
+            memory=memory,
+            return_source_documents=True,
+            combine_docs_chain_kwargs={"prompt": QA_PROMPT}
         )
-        st.stop()
+        return chain
+    except Exception as e:
+        st.error(f"Ocurrió un error al cargar el modelo o la base de datos: {e}")
+        return None
+
+def clean_source_name(source_name):
+    """Limpia el nombre de un archivo fuente de textos repetitivos."""
+    prefixes_to_remove = ["[Spanish (auto-generated)]", "[Spanish (Latin America)]", "[Spanish]"]
+    for prefix in prefixes_to_remove:
+        if source_name.startswith(prefix):
+            source_name = source_name[len(prefix):].strip()
     
-    llm = GoogleGenerativeAI(model="gemini-1.5-pro-latest", google_api_key=api_key)
-    return llm, api_key
+    if source_name.endswith("[DownSub.com].srt"):
+        source_name = source_name[:-len("[DownSub.com].srt")].strip()
+    
+    return source_name
 
-llm, api_key = load_llm_and_key()
+def clean_srt_content(text):
+    """Elimina los números de secuencia y timestamps de un fragmento de SRT."""
+    text = re.sub(r'\d{2}:\d{2}:\d{2},\d{3}\s+-->\s+\d{2}:\d{2}:\d{2},\d{3}', '', text)
+    text = re.sub(r'^\d+\s*$', '', text, flags=re.MULTILINE)
+    return '\n'.join(line for line in text.split('\n') if line.strip()).strip()
 
-# --- VERIFICACIÓN E INGESTA DE LA BASE DE DATOS ---
-db_path = "./chroma_db"
-if not os.path.exists(db_path):
-    ingest_data(api_key)
-
-@st.cache_resource
-def load_vectorstore(_api_key): # Usar _api_key para cachear
-    vectorstore = Chroma(
-        persist_directory=db_path,
-        embedding_function=GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=_api_key),
-    )
-    return vectorstore
-
-vectorstore = load_vectorstore(api_key)
-
-
-# --- Lógica de GERARD (sin cambios) ---
-prompt = ChatPromptTemplate.from_template('''
----
-INSTRUCCIONES DE PERSONALIDAD ---
-1. ROL Y PERSONA: Eres "GERARD", un analista de IA que encuentra patrones en textos.
-2. CONTEXTO: Analizas archivos .srt sobre temas espirituales y narrativas ocultas.
----
-REGLA DE FORMATO DE SALIDA (LA MÁS IMPORTANTE) ---
-Tu única forma de responder es generando un objeto JSON. Tu respuesta DEBE ser un array de objetos JSON válido. Cada objeto debe tener dos claves: "type" y "content".
-- "type" puede ser "normal" para texto regular, o "emphasis" para conceptos clave.
-- "content" es el texto en sí.
-EJEMPLO DE SALIDA OBLIGATORIA:
-[
-  {{ "type": "normal", "content": "El concepto principal es " }},
-  {{ "type": "emphasis", "content": "la energía Crística" }},
-  {{ "type": "normal", "content": ". (Fuente: archivo.srt, Timestamp: 00:01:23 --> 00:01:25)" }}
-]
----
-REGLA DE CITA ---
-Incluye las citas de la fuente DENTRO del "content" de un objeto de tipo "normal". El formato es: `(Fuente: nombre_del_archivo.srt, Timestamp: HH:MM:SS --> HH:MM:SS)`.
-Comienza tu labor, GERARD. Responde únicamente con el array JSON.
----
-FIN DE INSTRUCCIONES DE PERSONALIDAD ---
-Basándote ESTRICTAMENTE en las reglas y el contexto de abajo, responde la pregunta del usuario.
-<contexto>
-{context}
-</contexto>
-Pregunta del usuario: {input}
-''')
-
-def get_cleaning_pattern():
-    texts_to_remove = [
-        '[Spanish (auto-generated)]', '[DownSub.com]', '[Música]', '[Aplausos]'
-    ]
-    robust_patterns = [r'\[\s*' + re.escape(text[1:-1]) + r'\s*\]' for text in texts_to_remove]
-    return re.compile(r'|'.join(robust_patterns), re.IGNORECASE)
-
-cleaning_pattern = get_cleaning_pattern()
-
-def format_docs_with_metadata(docs):
-    formatted_strings = []
-    for doc in docs:
-        source_filename = os.path.basename(doc.metadata.get('source', 'Desconocido'))
-        texts_to_remove_from_filename = ["[Spanish (auto-generated)]", "[DownSub.com]"]
-        for text_to_remove in texts_to_remove_from_filename:
-            source_filename = source_filename.replace(text_to_remove, "")
-        source_filename = re.sub(r'\s+', ' ', source_filename).strip()
-        cleaned_content = cleaning_pattern.sub('', doc.page_content)
-        cleaned_content = re.sub(r'(\d{2}:\d{2}:\d{2}),\d{3}', r'\1', cleaned_content)
-        cleaned_content = "\n".join(line for line in cleaned_content.split('\n') if line.strip())
-        if cleaned_content:
-            formatted_strings.append(f"Fuente: {source_filename}\nContenido:\n{cleaned_content}")
-    return "\n\n---\n\n".join(formatted_strings)
-
-retriever = vectorstore.as_retriever()
-retrieval_chain = (
-    {"context": retriever | format_docs_with_metadata, "input": RunnablePassthrough()}
-    | prompt
-    | llm
-    | StrOutputParser()
-)
-
-# --- Funciones de Geolocalización y Registro ---
-@st.cache_data
-def get_user_location():
-    try:
-        response = requests.get('https://ipinfo.io/json', timeout=5)
-        data = response.json()
-        ip = data.get('ip', 'No disponible')
-        city = data.get('city', 'Desconocida')
-        country = data.get('country', 'Desconocido')
-        return f"{city}, {country} (IP: {ip})"
-    except Exception:
-        return "Ubicación no disponible"
-
-def get_clean_text_from_json(json_string):
-    try:
-        match = re.search(r'\[.*\]', json_string, re.DOTALL)
-        if not match: return json_string
-        data = json.loads(match.group(0))
-        return "".join([item.get("content", "") for item in data])
-    except:
-        return json_string
-
-
-def detect_gender_from_name(name: str) -> str:
-    """Heurística simple para detectar género a partir del primer nombre.
-    Regla principal: termina en 'a' -> Femenino, termina en 'o' -> Masculino.
-    Usa listas de excepciones comunes para mejorar la precisión.
-    Devuelve: 'Masculino', 'Femenino' o 'No especificar'.
+def html_to_pdf(html_string):
+    """Convierte una cadena HTML a un archivo PDF en memoria."""
+    result = BytesIO()
+    pdf_html = f"""
+    <html>
+    <head>
+        <style>
+            @page {{
+                background-color: #0E1117;
+            }}
+            body {{ 
+                font-family: sans-serif; 
+                color: white; 
+            }}
+            h3 {{ color: #00A6A6; }}
+            ul {{ list-style-type: none; padding-left: 0; }}
+            li {{ margin-bottom: 1em; border-top: 1px solid #333; padding-top: 1em;}}
+        </style>
+    </head>
+    <body>
+        {html_string}
+    </body>
+    </html>
     """
-    if not name or not name.strip():
-        return 'No especificar'
-    # Normalizar y tomar primer token
-    first = name.strip().split()[0].lower()
-    # Quitar caracteres no alfabéticos (mantener acentos y ñ)
-    first = re.sub(r"[^a-záéíóúüñ]", "", first)
+    pisa_status = pisa.CreatePDF(pdf_html.encode('utf-8'), dest=result)
+    if pisa_status.err:
+        return None
+    result.seek(0)
+    return result
 
-    # Listas de nombres comunes (no exhaustivas)
-    male_names = {"juan","carlos","pedro","jose","luis","miguel","axel","alan","adriel","adiel","alaniso","aladio","adolfo"}
-    female_names = {"maria","ana","laura","mariana","isabela","isabella","sofia","sofia"}
+def html_to_plain_text(html_string):
+    """Convierte una cadena HTML simple a texto plano para exportar."""
+    text = html_string.replace("<h3>--- Citas Textuales ---</h3>", "\n\n--- Citas Textuales ---\n")
+    text = re.sub(r'<li><span style="color: yellow;">(.*?)</span> <span style="color: violet;">(.*?)</span></li>', r'- "\1" \2\n', text)
+    text = re.sub('<[^<]+?>', '', text) # Limpiar cualquier etiqueta HTML restante
+    return text.strip()
 
-    if first in male_names:
-        return 'Masculino'
-    if first in female_names:
-        return 'Femenino'
+def main():
+    st.set_page_config(page_title="Consultor Gerard", page_icon="🤖")
+    st.title("🤖 Consultor Gerard")
+    st.write("Bienvenido. Soy Gerard, tu asistente virtual. Estoy aquí para responder tus preguntas basado en un conjunto de documentos.")
 
-    # Regla por terminación (heurística fuerte en español)
-    if first.endswith(('a','á')):
-        return 'Femenino'
-    if first.endswith(('o','ó')):
-        return 'Masculino'
+    if "conversation_chain" not in st.session_state:
+        st.session_state.conversation_chain = None
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    if "user_name" not in st.session_state:
+        st.session_state.user_name = ""
 
-    # Nombres neutros o no detectables
-    return 'No especificar'
+    if st.session_state.conversation_chain is None:
+        with st.spinner("Cargando a Gerard... Por favor, espera."):
+            st.session_state.conversation_chain = get_conversational_chain()
+        if st.session_state.conversation_chain is None:
+            st.stop()
 
-def save_to_log(user, question, answer_json, location):
-    clean_answer = get_clean_text_from_json(answer_json)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open("gerard_log.txt", "a", encoding="utf-8") as f:
-        f.write(f"--- Conversación del {timestamp} ---\n")
-        f.write(f"Usuario: {user}\n")
-        f.write(f"Ubicación: {location}\n")
-        f.write(f"Pregunta: {question}\n")
-        f.write(f"Respuesta de GERARD: {clean_answer}\n")
-        f.write("="*40 + "\n\n")
-
-# --- Interfaz de Usuario con Streamlit ---
-st.set_page_config(page_title="GERARD", layout="centered")
-
-# --- Avatares personalizados ---
-user_avatar = "https://api.iconify.design/line-md/question-circle.svg?color=%2358ACFA"
-assistant_avatar = "https://api.iconify.design/mdi/ufo-outline.svg?color=%238A2BE2"
-
-
-# --- Estilos CSS y Título ---
-st.markdown('''
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap');
-.title-style {
-    /* Tipografía moderna y mayor tamaño */
-    font-family: 'Poppins', 'Orbitron', sans-serif;
-    font-size: 8em; /* un poco más grande */
-    text-align: center;
-    color: #8A2BE2; /* Violeta */
-    padding-bottom: 20px;
-    line-height: 0.9;
-    /* pulso suave (palpitante) */
-    animation: pulse-title 2s infinite ease-in-out;
-    text-shadow: 0 6px 18px rgba(138,43,226,0.15);
-}
-.welcome-text {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 2.5em;
-    text-align: center;
-    color: #28a745; /* Green */
-    padding-bottom: 5px;
-}
-.sub-welcome-text {
-    text-align: center;
-    font-size: 1.1em;
-    margin-top: -15px;
-    padding-bottom: 20px;
-}
-.intro-text {
-    text-transform: uppercase;
-    text-align: center;
-    color: #58ACFA; /* Azul claro */
-    font-size: 2.6em;
-    padding-bottom: 20px;
-}
-.loader-container {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding-top: 5px;
-}
-.dot {
-    height: 10px;
-    width: 10px;
-    margin: 0 3px;
-    background-color: #8A2BE2; /* Violeta */
-    border-radius: 50%;
-    display: inline-block;
-    animation: bounce 1.4s infinite ease-in-out both;
-}
-.dot:nth-child(1) { animation-delay: -0.32s; }
-.dot:nth-child(2) { animation-delay: -0.16s; }
-@keyframes bounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1.0); }
-}
-
-@keyframes pulse-title {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.06); }
-    100% { transform: scale(1); }
-}
-
-/* --- ¡NUEVA ANIMACIÓN CSS! --- */
-.pulsing-q {
-    font-size: 1.5em; /* 24px */
-    color: red;
-    font-weight: bold;
-    animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.25); opacity: 0.75; }
-    100% { transform: scale(1); opacity: 1; }
-}
-/* Clase reutilizable para texto verde pulsante */
-.green-pulse {
-    color: #28a745; /* verde */
-    font-weight: bold;
-    font-size: 2em;
-    animation: pulse 1.2s infinite;
-}
-
-/* Media queries para móviles (mejor legibilidad en Android/iOS antiguos y modernos) */
-@media (max-width: 1200px) {
-    .title-style { font-size: 5.2em; }
-    .intro-text { font-size: 1.6em; }
-}
-@media (max-width: 800px) {
-    .title-style { font-size: 3.2em; }
-    .intro-text { font-size: 1.15em; }
-    .welcome-text { font-size: 1.6em; }
-}
-@media (max-width: 480px) {
-    .title-style { font-size: 2.4em; }
-    .intro-text { font-size: 1.0em; }
-    .welcome-text { font-size: 1.2em; }
-    .green-pulse { font-size: 1.2em; }
-}
-@media (max-width: 360px) {
-    .title-style { font-size: 2.0em; }
-    .intro-text { font-size: 0.95em; }
-    .green-pulse { font-size: 1.0em; }
-}
-</style>
-<div class="title-style">GERARD</div>
-''', unsafe_allow_html=True)
-
-# (UI refinements removed; restored original behavior)
-
-location = get_user_location()
-
-if 'user_name' not in st.session_state:
-    st.session_state.user_name = ''
-if 'user_gender' not in st.session_state:
-    st.session_state.user_gender = 'No especificar'
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-
-if not st.session_state.user_name:
-    st.markdown('''
-    <p class="intro-text" style="font-size:1.8em; line-height:1.05;">
-    Hola, soy GERARD tu asistente especializado en los mensajes y meditaciones de los 9 Maestros: <strong>ALANISO, AXEL, ALAN, AZEN, AVIATAR, ALADIM, ADIEL, AZOES Y ALIESTRO</strong>.
-    <br>
-    Las tres grandes energias el Padre Amor, la Gran Madre y el Gran Maestro Jesus.
-    </p>
-    <p style="text-align:center; margin-top:12px; font-size:1.25em; text-transform:uppercase; font-weight:bold;">
-    TE AYUDARE A ENCONTRAR CON PRECISIÓN EL MINUTO Y SEGUNDO EXACTO EN CADA AUDIO O ENSEÑANZAS QUE YA HAYAS ESCUCHADO ANTERIORMENTE ENTRE LAS CIENTOS DE MEDITACIONES Y MENSAJES CANALIZADOS POR SARITA OTERO. PERO QUE EN EL MOMENTO NO RECUERDAS EXACTAMENTE Y ESTÉS BUSCANDO EN TU ARDUO ESTUDIO DE ENCONTRAR NUEVOS MENSAJES DENTRO DE LOS MENSAJES COMO ESTUDIANTE ALANISO AVANZADO.
-    <br>
-    <span style="color:red;">PARA COMENZAR, POR FAVOR INTRODUCE TU NOMBRE Y TE DARÉ ACCESO PARA QUE PUEDAS HACER TUS PREGUNTAS.</span>
-    </p>
-    ''', unsafe_allow_html=True)
-    
-    st.markdown('<div style="text-align:center; margin-top:8px;"><span class="green-pulse">TU NOMBRE</span></div>', unsafe_allow_html=True)
-    user_name_input = st.text_input("Tu Nombre", key="name_inputter", label_visibility="collapsed")
-    if user_name_input:
-        st.session_state.user_name = user_name_input.upper()
-        # Detección automática del género desde el nombre
-        detected = detect_gender_from_name(user_name_input)
-        # Permitir confirmar o corregir la detección
-        confirm_options = [detected]
-        for opt in ("Masculino", "Femenino", "No especificar"):
-            if opt not in confirm_options:
-                confirm_options.append(opt)
-
-        chosen = st.selectbox("Detecté el género: seleccione para confirmar o corregir", options=confirm_options, index=0, key="gender_confirm")
-        st.session_state.user_gender = chosen
-        st.rerun()
-else:
-    # Construir bienvenida flexible según género seleccionado
-    gender = st.session_state.get('user_gender', 'No especificar')
-    if gender == 'Masculino':
-        bienvenida = 'BIENVENIDO'
-    elif gender == 'Femenino':
-        bienvenida = 'BIENVENIDA'
-    else:
-        bienvenida = 'BIENVENID@'
-
-    st.markdown(f'''
-    <div class="welcome-text">{bienvenida} {st.session_state.user_name}</div>
-    <p class="sub-welcome-text">AHORA YA PUEDES REALIZAR TUS PREGuntas EN LA PARTE INFERIOR</p>
-    ''', unsafe_allow_html=True)
-
-# --- Mostrar historial con avatares personalizados ---
-for message in st.session_state.messages:
-    avatar = user_avatar if message["role"] == "user" else assistant_avatar
-    with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"], unsafe_allow_html=True)
-
-# --- Input del usuario con avatares personalizados ---
-if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
     if not st.session_state.user_name:
-        st.warning("Por favor, introduce tu nombre para continuar.")
+        st.session_state.user_name = st.text_input("Por favor, introduce tu nombre para comenzar:")
+        if st.session_state.user_name:
+            st.rerun()
     else:
-        # --- ¡AQUÍ ESTÁ EL CAMBIO! ---
-        # Se reemplaza la imagen por un texto animado con CSS
-        styled_prompt = f'''
-        <div style="display: flex; align-items: center; justify-content: flex-start;">
-            <span style="text-transform: uppercase; color: orange; margin-right: 8px; font-weight: bold;">{prompt_input}</span>
-            <span class="pulsing-q">?</span>
-        </div>
-        '''
-        
-        st.session_state.messages.append({"role": "user", "content": styled_prompt})
-        
-        with st.chat_message("user", avatar=user_avatar):
-            st.markdown(styled_prompt, unsafe_allow_html=True)
+        for message in st.session_state.chat_history:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"], unsafe_allow_html=True)
 
-        with st.chat_message("assistant", avatar=assistant_avatar):
-            response_placeholder = st.empty()
-            loader_html = '''
-            <div class="loader-container">
-                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-                <span style='margin-left: 10px; font-style: italic; color: #888;'>Buscando...</span>
-            </div>
-            '''
-            response_placeholder.markdown(loader_html, unsafe_allow_html=True)
+        user_question = st.chat_input(f"Hola {st.session_state.user_name}, ¿en qué puedo ayudarte?")
 
-            try:
-                answer_json = retrieval_chain.invoke(prompt_input)
-                save_to_log(st.session_state.user_name, prompt_input, answer_json, location)
-                
-                match = re.search(r'\[.*\]', answer_json, re.DOTALL)
-                if not match:
-                    st.error("La respuesta del modelo no fue un JSON válido.")
-                    response_html = f'<p style="color:red;">{answer_json}</p>'
-                else:
-                    data = json.loads(match.group(0))
-                    response_html = f'<strong style="color:#28a745;">{st.session_state.user_name}:</strong> '
-                    for item in data:
-                        content_type = item.get("type", "normal")
-                        content = item.get("content", "")
-                        if content_type == "emphasis":
-                            response_html += f'<span style="color:yellow; background-color: #333; border-radius: 4px; padding: 2px 4px;">{content}</span>'
-                        else:
-                            content_html = re.sub(r'(\(\s*.*?\s*\))', r'<span style="color:#87CEFA;">\1</span>', content)
-                            response_html += content_html
-                
-                response_placeholder.markdown(response_html, unsafe_allow_html=True)
-                st.session_state.messages.append({"role": "assistant", "content": response_html})
+        if user_question:
+            st.session_state.chat_history.append({"role": "user", "content": user_question})
+            with st.chat_message("user"):
+                st.markdown(user_question)
 
-            except Exception as e:
-                response_placeholder.error(f"Ocurrió un error al procesar tu pregunta: {e}")
+            with st.chat_message("assistant"):
+                with st.spinner("Pensando..."):
+                    try:
+                        result = st.session_state.conversation_chain.invoke({"question": user_question})
+                        answer = result["answer"]
+                        sources = result.get("source_documents", [])
+                        
+                        final_answer_html = f"<p>{answer}</p>" # Empezar con el resumen
+
+                        if sources:
+                            final_answer_html += "<h3>--- Citas Textuales ---</h3>"
+                            quotes_html_list = "<ul>"
+                            
+                            for doc in sources:
+                                source_path = doc.metadata.get("source", "Fuente desconocida")
+                                source_file = os.path.basename(source_path)
+                                cleaned_name = clean_source_name(source_file)
+                                
+                                timestamp_match = re.search(r'(\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3})', doc.page_content)
+                                if timestamp_match:
+                                    timestamp = timestamp_match.group(0)
+                                    short_timestamp = re.sub(r',\d{3}', '', timestamp)
+                                    source_info = f"(Fuente: {cleaned_name}, Timestamp: {short_timestamp})"
+                                else:
+                                    source_info = f"(Fuente: {cleaned_name}, Timestamp: No disponible)"
+
+                                quote_text = clean_srt_content(doc.page_content)
+
+                                highlighted_quote = f'<span style="color: yellow;">{quote_text}</span>'
+                                violet_source = f' <span style="color: violet;">{source_info}</span>'
+                                quotes_html_list += f"<li>{highlighted_quote}{violet_source}</li>"
+
+                            quotes_html_list += "</ul>"
+                            final_answer_html += quotes_html_list
+                        
+                        st.markdown(final_answer_html, unsafe_allow_html=True)
+                        st.session_state.chat_history.append({"role": "assistant", "content": final_answer_html})
+
+                        # --- Funcionalidad de Exportar y Compartir ---
+                        st.markdown("---")
+                        plain_text_response = html_to_plain_text(final_answer_html)
+                        pdf_file = html_to_pdf(final_answer_html)
+                        
+                        col1, col2 = st.columns(2)
+
+                        with col1:
+                            st.subheader("📥 Exportar")
+                            st.download_button(
+                                label="Descargar como TXT",
+                                data=plain_text_response.encode('utf-8'),
+                                file_name="respuesta_gerard.txt",
+                                mime="text/plain"
+                            )
+                            if pdf_file:
+                                st.download_button(
+                                    label="Descargar como PDF",
+                                    data=pdf_file,
+                                    file_name="respuesta_gerard.pdf",
+                                    mime="application/pdf"
+                                )
+                        
+                        with col2:
+                            st.subheader("🔗 Compartir")
+                            encoded_text = quote(plain_text_response)
+                            st.markdown(f"[Compartir por Email](mailto:?subject=Respuesta%20de%20Gerard&body={encoded_text})")
+                            st.markdown(f"[Compartir en WhatsApp](https://api.whatsapp.com/send?text={encoded_text})")
+                            st.markdown(f"[Compartir en Telegram](https://t.me/share/url?url=&text={encoded_text})")
+
+                    except Exception as e:
+                        st.error(f"Ocurrió un error al procesar tu pregunta: {e}")
+
+if __name__ == "__main__":
+    main()
+
