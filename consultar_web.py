@@ -27,8 +27,7 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
-from io import BytesIO
-from xhtml2pdf import pisa
+
 from urllib.parse import quote
 
 # Cargar variables de entorno
@@ -102,42 +101,9 @@ def clean_srt_content(text):
     text = re.sub(r'^\d+\s*$', '', text, flags=re.MULTILINE)
     return '\n'.join(line for line in text.split('\n') if line.strip()).strip()
 
-def html_to_pdf(html_string):
-    """Convierte una cadena HTML a un archivo PDF en memoria."""
-    result = BytesIO()
-    pdf_html = f"""
-    <html>
-    <head>
-        <style>
-            @page {{
-                background-color: #0E1117;
-            }}
-            body {{ 
-                font-family: sans-serif; 
-                color: white; 
-            }}
-            h3 {{ color: #00A6A6; }}
-            ul {{ list-style-type: none; padding-left: 0; }}
-            li {{ margin-bottom: 1em; border-top: 1px solid #333; padding-top: 1em;}}
-        </style>
-    </head>
-    <body>
-        {html_string}
-    </body>
-    </html>
-    """
-    pisa_status = pisa.CreatePDF(pdf_html.encode('utf-8'), dest=result)
-    if pisa_status.err:
-        return None
-    result.seek(0)
-    return result
 
-def html_to_plain_text(html_string):
-    """Convierte una cadena HTML simple a texto plano para exportar."""
-    text = html_string.replace("<h3>--- Citas Textuales ---</h3>", "\n\n--- Citas Textuales ---\n")
-    text = re.sub(r'<li><span style="color: yellow;">(.*?)</span> <span style="color: violet;">(.*?)</span></li>', r'- "\1" \2\n', text)
-    text = re.sub('<[^<]+?>', '', text) # Limpiar cualquier etiqueta HTML restante
-    return text.strip()
+
+
 
 def main():
     st.set_page_config(page_title="Consultor Gerard", page_icon="🤖")
@@ -213,30 +179,23 @@ def main():
 
                         # --- Funcionalidad de Exportar y Compartir ---
                         st.markdown("---")
-                        plain_text_response = html_to_plain_text(final_answer_html)
-                        pdf_file = html_to_pdf(final_answer_html)
                         
                         col1, col2 = st.columns(2)
 
                         with col1:
                             st.subheader("📥 Exportar")
                             st.download_button(
-                                label="Descargar como TXT",
-                                data=plain_text_response.encode('utf-8'),
-                                file_name="respuesta_gerard.txt",
-                                mime="text/plain"
+                                label="Descargar como HTML",
+                                data=final_answer_html.encode('utf-8'),
+                                file_name="respuesta_gerard.html",
+                                mime="text/html"
                             )
-                            if pdf_file:
-                                st.download_button(
-                                    label="Descargar como PDF",
-                                    data=pdf_file,
-                                    file_name="respuesta_gerard.pdf",
-                                    mime="application/pdf"
-                                )
                         
                         with col2:
                             st.subheader("🔗 Compartir")
-                            encoded_text = quote(plain_text_response)
+                            # Para compartir, usamos una versión de texto plano simple
+                            plain_text_for_sharing = re.sub('<[^<]+?>', '', final_answer_html)
+                            encoded_text = quote(plain_text_for_sharing)
                             st.markdown(f"[Compartir por Email](mailto:?subject=Respuesta%20de%20Gerard&body={encoded_text})")
                             st.markdown(f"[Compartir en WhatsApp](https://api.whatsapp.com/send?text={encoded_text})")
                             st.markdown(f"[Compartir en Telegram](https://t.me/share/url?url=&text={encoded_text})")
