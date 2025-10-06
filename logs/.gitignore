@@ -1,0 +1,10 @@
+# Ignorar todos los archivos de log
+*.txt
+*.log
+*.json
+
+# Excepción: mantener este archivo .gitignore
+!.gitignore
+
+# Ignorar archivos de cache de geolocalización
+.geo_cache.json

@@ -27,6 +27,9 @@ from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 from colorama import Fore, Style, init
 
+# Importar sistema de logging
+from interaction_logger import InteractionLogger
+
 # Inicializar colorama para que funcione en Windows
 init()
 
@@ -398,6 +401,9 @@ def main():
     if not chain:
         return
 
+    # Inicializar logger para terminal
+    logger = InteractionLogger(platform="terminal", anonymize=False)
+    
     print(Fore.CYAN + "GERARD listo. Escribe tu pregunta o 'salir' para terminar." + Style.RESET_ALL)
     
     user_name = input("Por favor, introduce tu nombre para comenzar: ")
@@ -411,12 +417,35 @@ def main():
             break
         
         if user_question:
+            session_id = None
             try:
                 print(Fore.YELLOW + "Buscando..." + Style.RESET_ALL)
                 
+                # Iniciar logging de la interacción
+                session_id = logger.start_interaction(
+                    user=user_name,
+                    question=user_question
+                )
+                
+                # Marcar inicio de consulta RAG
+                logger.mark_phase(session_id, "rag_start")
+                
+                # Marcar inicio de consulta LLM
+                logger.mark_phase(session_id, "llm_start")
+                
                 result = chain.invoke({"question": user_question})
+                
+                # Marcar fin de consulta LLM
+                logger.mark_phase(session_id, "llm_end")
+                
                 answer = result["answer"]
                 sources = result.get("source_documents", [])
+                
+                # Registrar respuesta
+                logger.log_response(session_id, answer, sources)
+                
+                # Marcar inicio de procesamiento
+                logger.mark_phase(session_id, "processing_start")
 
                 print(Fore.GREEN + "\nRespuesta de GERARD:" + Style.RESET_ALL)
                 print(answer) # Imprime el resumen
@@ -448,10 +477,20 @@ def main():
                         violet_source = f" {Fore.MAGENTA}{source_info}{Style.RESET_ALL}"
                         
                         print(f"- {highlighted_quote}{violet_source}\n")
+                
+                # Marcar fin de procesamiento
+                logger.mark_phase(session_id, "processing_end")
+                
+                # Finalizar logging con éxito
+                if session_id:
+                    logger.end_interaction(session_id, status="success")
 
             except Exception as e:
                 print(Fore.RED + f"Ocurrió un error al procesar tu pregunta: {e}" + Style.RESET_ALL)
+                
+                # Finalizar logging con error
+                if session_id:
+                    logger.end_interaction(session_id, status="error", error=str(e))
 
 if __name__ == "__main__":
     main()
-
