@@ -862,80 +862,58 @@ div[data-testid="stChatMessageContent"] {
                         # Marcar inicio de procesamiento
                         st.session_state.logger.mark_phase(session_id, "processing_start")
 
-                        # --- POST-PROCESAMIENTO ROBUSTO DE REFERENCIAS ---
-                        # Crear un mapa completo de todas las fuentes con sus timestamps
+                        # --- POST-PROCESAMIENTO DEFINITIVO DE REFERENCIAS ---
+
+                        # 1. Construir un mapa de referencias lo más detallado posible
                         source_info_map = {}
-                        
                         if sources:
                             for doc in sources:
                                 source_path = doc.metadata.get("source", "Fuente desconocida")
                                 source_file = os.path.basename(source_path)
                                 cleaned_name = clean_source_name(source_file)
                                 
-                                # Extraer timestamp del contenido
-                                timestamp_match = re.search(r'(\d{2}:\d{2}:\d{2}),\d{3}', doc.page_content)
+                                timestamp_match = re.search(r'(\d{2}):(\d{2}):(\d{2}),\d{3}', doc.page_content)
                                 if timestamp_match:
-                                    # Convertir timestamp a formato MM:SS
-                                    full_time = timestamp_match.group(1)  # HH:MM:SS
-                                    time_parts = full_time.split(':')
-                                    # Tomar solo MM:SS
-                                    short_time = f"{time_parts[1]}:{time_parts[2]}"
+                                    mm_ss_time = f"{timestamp_match.group(2)}:{timestamp_match.group(3)}"
+                                    full_reference = f"{cleaned_name} - {mm_ss_time}"
                                     
-                                    # Crear la referencia completa
-                                    full_reference = f"{cleaned_name} - {short_time}"
+                                    # Clave principal: el nombre limpio del archivo
+                                    source_info_map[cleaned_name] = full_reference
                                     
-                                    # Guardar múltiples variantes para poder encontrar la referencia
-                                    # Extraer número de meditación/mensaje
-                                    num_match = re.search(r'(?:MEDITACION|MENSAJE)\s*(\d+)', source_file, re.IGNORECASE)
+                                    # Clave secundaria: el número de meditación/mensaje si existe
+                                    num_match = re.search(r'(?:MEDITACION|MENSAJE)\s*(\d+)', cleaned_name, re.IGNORECASE)
                                     if num_match:
                                         number = num_match.group(1)
-                                        # Guardar por número
                                         source_info_map[number] = full_reference
-                                        # Guardar también por nombre de archivo parcial
-                                        source_info_map[cleaned_name] = full_reference
-                                        # Guardar por timestamp
-                                        source_info_map[short_time] = full_reference
-                                        source_info_map[full_time] = full_reference
-                        
-                        # Paso 1: Reemplazar todas las referencias encontradas en el texto
-                        modified_answer = answer
-                        
-                        # Buscar y reemplazar patrones comunes de referencias:
-                        # Patrón 1: (263.srt - 27:09) o similar
-                        modified_answer = re.sub(
-                            r'\((\d+)\.srt\s*-\s*(\d{2}:\d{2})\)',
-                            lambda m: f"({source_info_map.get(m.group(1), source_info_map.get(m.group(2), f'{m.group(1)}.srt - {m.group(2)}'))})",
-                            modified_answer
-                        )
-                        
-                        # Patrón 2: Solo números entre paréntesis (107), (263), etc.
-                        modified_answer = re.sub(
-                            r'\((\d+)\)',
-                            lambda m: f"({source_info_map.get(m.group(1), m.group(1))})",
-                            modified_answer
-                        )
-                        
-                        # Patrón 3: Timestamps completos (HH:MM:SS)
-                        modified_answer = re.sub(
-                            r'\((\d{2}:\d{2}:\d{2})\)',
-                            lambda m: f"({source_info_map.get(m.group(1), m.group(1))})",
-                            modified_answer
-                        )
-                        
-                        # Patrón 4: Timestamps cortos (MM:SS)
-                        modified_answer = re.sub(
-                            r'\((\d{2}:\d{2})\)',
-                            lambda m: f"({source_info_map.get(m.group(1), m.group(1))})",
-                            modified_answer
-                        )
-                        
-                        # Paso 2: Aplicar color violeta a TODO el contenido entre paréntesis
-                        formatted_answer = re.sub(
-                            r'\(([^)]+)\)',
-                            lambda m: f"(<span style='color: violet;'>{m.group(1)}</span>)",
-                            modified_answer
-                        )
-                        
+
+                        # 2. Función de reemplazo dedicada
+                        def replace_reference(match):
+                            original_ref_text = match.group(1) # Contenido dentro del paréntesis
+                            
+                            # Intentar extraer un número (la clave más fiable)
+                            num_match = re.search(r'\d+', original_ref_text)
+                            if num_match:
+                                number = num_match.group(0)
+                                if number in source_info_map:
+                                    # ¡Éxito! Reemplazar con la referencia completa y formateada
+                                    correct_reference = source_info_map[number]
+                                    return f"(<span style='color: violet;'>{correct_reference}</span>)"
+
+                            # Si falla la búsqueda por número, intentar por nombre de archivo (menos fiable)
+                            for key, value in source_info_map.items():
+                                # Usar una versión simplificada de la clave para la búsqueda
+                                simple_key = key.replace(" ", "").replace("_", "").lower()
+                                simple_ref_text = original_ref_text.replace(" ", "").replace("_", "").lower()
+                                if simple_key in simple_ref_text:
+                                    return f"(<span style='color: violet;'>{value}</span>)"
+
+                            # Fallback: Si no se encuentra ninguna coincidencia, devolver el texto original pero coloreado
+                            return f"(<span style='color: violet;'>{original_ref_text}</span>)"
+
+                        # 3. Aplicar el reemplazo en un solo paso
+                        # Usar una expresión regular para encontrar todo lo que esté entre paréntesis
+                        formatted_answer = re.sub(r'\(([^)]+)\)', replace_reference, answer)
+
                         final_answer_html = f"<p>{formatted_answer}</p>"
                         
                         # Agregar sección de citas textuales
