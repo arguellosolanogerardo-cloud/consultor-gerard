@@ -981,74 +981,83 @@ div[data-testid="stChatMessageContent"] {
                     # Finalizar logging con error
                     if session_id:
                         st.session_state.logger.end_interaction(session_id, status="error", error=str(e))
+        
+        # --- Funcionalidad de Exportar (fuera del contexto del mensaje) ---
+        # Solo mostrar si hay historial de chat con respuestas
+        if len(st.session_state.chat_history) > 0:
+            # Obtener la última respuesta del asistente y la última pregunta
+            last_assistant_message = None
+            last_user_question = None
             
-            # --- Funcionalidad de Exportar (fuera del contexto del mensaje) ---
-            # Solo mostrar si hay historial de chat con respuestas
-            if len(st.session_state.chat_history) > 0:
-                # Obtener la última respuesta del asistente
-                last_assistant_message = None
-                for msg in reversed(st.session_state.chat_history):
-                    if msg["role"] == "assistant":
-                        last_assistant_message = msg["content"]
-                        break
+            # Buscar la última respuesta y su pregunta correspondiente
+            for i in range(len(st.session_state.chat_history) - 1, -1, -1):
+                msg = st.session_state.chat_history[i]
+                if msg["role"] == "assistant" and last_assistant_message is None:
+                    last_assistant_message = msg["content"]
+                elif msg["role"] == "user" and last_user_question is None and last_assistant_message is not None:
+                    # Extraer el texto de la pregunta del HTML formateado
+                    question_text = re.sub('<[^<]+?>', '', msg["content"])
+                    last_user_question = question_text.strip()
+                    break
+            
+            if last_assistant_message and last_user_question:
+                st.markdown("---")
+                st.subheader("📥 Exportar última respuesta")
                 
-                if last_assistant_message:
-                    st.markdown("---")
-                    st.subheader("📥 Exportar última respuesta")
-                    
-                    # Crear tres columnas para los botones
-                    col1, col2, col3 = st.columns(3)
-                    
-                    with col1:
-                        # Botón HTML
+                # Crear tres columnas para los botones
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    # Botón HTML
+                    st.download_button(
+                        label="📄 HTML",
+                        data=last_assistant_message.encode('utf-8'),
+                        file_name="respuesta_gerard.html",
+                        mime="text/html",
+                        use_container_width=True,
+                        key="export_html_btn",
+                        help="Descargar respuesta en formato HTML"
+                    )
+                
+                with col2:
+                    # Botón PDF
+                    pdf_content = export_to_pdf(last_assistant_message, last_user_question)
+                    if pdf_content:
                         st.download_button(
-                            label="📄 Descargar HTML",
-                            data=last_assistant_message.encode('utf-8'),
-                            file_name="respuesta_gerard.html",
-                            mime="text/html",
+                            label="📕 PDF",
+                            data=pdf_content,
+                            file_name="respuesta_gerard.pdf",
+                            mime="application/pdf",
                             use_container_width=True,
-                            key=f"html_btn_{len(st.session_state.chat_history)}"
+                            key="export_pdf_btn",
+                            help="Descargar respuesta en formato PDF"
                         )
+                
+                with col3:
+                    # Botón para descargar texto plano
+                    plain_text = extract_plain_text(last_assistant_message)
+                    full_text = f"Pregunta: {last_user_question}\n\n{plain_text}"
                     
-                    with col2:
-                        # Botón PDF
-                        pdf_content = export_to_pdf(last_assistant_message, user_question)
-                        if pdf_content:
-                            st.download_button(
-                                label="📕 Descargar PDF",
-                                data=pdf_content,
-                                file_name="respuesta_gerard.pdf",
-                                mime="application/pdf",
-                                use_container_width=True,
-                                key=f"pdf_btn_{len(st.session_state.chat_history)}"
-                            )
-                    
-                    with col3:
-                        # Botón para copiar texto plano
-                        plain_text = extract_plain_text(last_assistant_message)
-                        # Agregar pregunta al inicio del texto
-                        full_text = f"Pregunta: {user_question}\n\n{plain_text}"
-                        
-                        # Usar download_button como alternativa para copiar
-                        st.download_button(
-                            label="📋 Copiar Texto",
-                            data=full_text.encode('utf-8'),
-                            file_name="respuesta_gerard.txt",
-                            mime="text/plain",
-                            use_container_width=True,
-                            key=f"txt_btn_{len(st.session_state.chat_history)}"
-                        )
-                    
-                    # Agregar área de texto expandible para copiar manualmente
-                    with st.expander("📝 Ver texto completo para copiar"):
-                        plain_text_for_copy = extract_plain_text(last_assistant_message)
-                        st.text_area(
-                            "Selecciona y copia el texto:",
-                            value=f"Pregunta: {user_question}\n\n{plain_text_for_copy}",
-                            height=300,
-                            key=f"text_area_{len(st.session_state.chat_history)}"
-                        )
-                        st.info("💡 Consejo: Haz clic dentro del cuadro de texto, presiona Ctrl+A (o Cmd+A en Mac) para seleccionar todo, luego Ctrl+C (o Cmd+C) para copiar.")
+                    st.download_button(
+                        label="📋 TXT",
+                        data=full_text.encode('utf-8'),
+                        file_name="respuesta_gerard.txt",
+                        mime="text/plain",
+                        use_container_width=True,
+                        key="export_txt_btn",
+                        help="Descargar respuesta en formato texto"
+                    )
+                
+                # Agregar área de texto expandible para copiar manualmente
+                with st.expander("📝 Ver texto completo para copiar"):
+                    plain_text_for_copy = extract_plain_text(last_assistant_message)
+                    st.text_area(
+                        "Selecciona y copia el texto:",
+                        value=f"Pregunta: {last_user_question}\n\n{plain_text_for_copy}",
+                        height=300,
+                        key="export_text_area"
+                    )
+                    st.info("💡 Consejo: Haz clic dentro del cuadro de texto, presiona Ctrl+A (o Cmd+A en Mac) para seleccionar todo, luego Ctrl+C (o Cmd+C) para copiar.")
 
 if __name__ == "__main__":
     main()
