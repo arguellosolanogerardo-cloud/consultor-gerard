@@ -37,6 +37,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.units import inch
+from reportlab.lib.colors import HexColor
 from io import BytesIO
 
 # Importar sistema de logging
@@ -220,73 +221,61 @@ def extract_plain_text(html_content):
     return plain_text.strip()
 
 def export_to_pdf(html_content, user_question):
-    """Convierte HTML a PDF para exportación."""
+    """Convierte HTML a PDF para exportación, preservando colores."""
     try:
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter,
                                rightMargin=72, leftMargin=72,
                                topMargin=72, bottomMargin=18)
         
-        # Contenedor para los elementos del PDF
         elements = []
-        
-        # Estilos
         styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            spaceAfter=30,
-            alignment=1  # Center
-        )
+
+        # Estilos personalizados
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=24, spaceAfter=30, alignment=1)
+        normal_style = ParagraphStyle('BodyText', parent=styles['BodyText'], fontSize=10, leading=13)
         
-        heading_style = ParagraphStyle(
-            'CustomHeading',
-            parent=styles['Heading2'],
-            fontSize=14,
-            spaceAfter=12
-        )
-        
-        normal_style = styles['BodyText']
-        normal_style.fontSize = 10
-        normal_style.leading = 13
-        
-        # Título
+        # Título y metadata
         elements.append(Paragraph("GERARD - Respuesta", title_style))
         elements.append(Spacer(1, 0.2*inch))
-        
-        # Metadata
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         elements.append(Paragraph(f"<b>Fecha:</b> {timestamp}", normal_style))
-        
-        # Escapar caracteres especiales en la pregunta
         safe_question = user_question.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
         elements.append(Paragraph(f"<b>Pregunta:</b> {safe_question}", normal_style))
         elements.append(Spacer(1, 0.3*inch))
-        
-        # Convertir HTML a texto plano para evitar problemas
-        plain_text = re.sub('<[^<]+?>', '', html_content)
-        
-        # Dividir en párrafos y agregar al PDF
-        paragraphs = plain_text.split('\n')
-        for para in paragraphs:
-            if para.strip():
-                # Escapar caracteres especiales
-                safe_para = para.strip().replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                try:
-                    elements.append(Paragraph(safe_para, normal_style))
+
+        # Procesar el contenido HTML
+        # 1. La respuesta principal
+        main_answer_match = re.search(r'<p>(.*?)</p>', html_content, re.DOTALL)
+        if main_answer_match:
+            main_answer_html = main_answer_match.group(1)
+            # Reemplazar spans de color violeta con tags de fuente de reportlab
+            main_answer_formatted = re.sub(r"<span style='color: violet;'>([^<]+)</span>", r"<font color='violet'>\1</font>", main_answer_html)
+            elements.append(Paragraph(main_answer_formatted, normal_style))
+            elements.append(Spacer(1, 0.2*inch))
+
+        # 2. Las citas textuales
+        citas_header_match = re.search(r'<h3>--- Citas Textuales ---</h3>', html_content)
+        if citas_header_match:
+            elements.append(Paragraph("--- Citas Textuales ---", styles['Heading3']))
+            
+            citas = re.findall(r'<li>(.*?)</li>', html_content, re.DOTALL)
+            for cita_html in citas:
+                quote_match = re.search(r'<span style="color: #0066CC;">(.*?)</span>', cita_html, re.DOTALL)
+                source_match = re.search(r'<span style="color: violet;">(.*?)</span>', cita_html, re.DOTALL)
+                
+                if quote_match and source_match:
+                    quote_text = quote_match.group(1).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    source_text = source_match.group(1).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    
+                    formatted_cita = f"<font color='#0066CC'>{quote_text}</font> <font color='violet'>{source_text}</font>"
+                    elements.append(Paragraph(formatted_cita, normal_style))
                     elements.append(Spacer(1, 0.1*inch))
-                except Exception as e:
-                    # Si un párrafo específico causa error, continuar con el siguiente
-                    continue
-        
-        # Construir PDF
+
         doc.build(elements)
-        
         buffer.seek(0)
         return buffer.getvalue()
     except Exception as e:
-        # Si hay error en la generación del PDF, retornar None
         st.error(f"Error al generar PDF: {str(e)}")
         return None
 
