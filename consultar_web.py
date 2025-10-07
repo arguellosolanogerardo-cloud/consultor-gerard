@@ -144,13 +144,30 @@ def get_conversational_chain():
         )
         
         # Prompt para GERARD 3.0
-        prompt_template = '''[El prompt completo de GERARD se mantiene igual...]
+        prompt_template = '''IDENTIDAD DEL SISTEMA
+Nombre: GERARD
+Versión: 3.0 - Analista Investigativo
+
+INSTRUCCIÓN CRÍTICA SOBRE FORMATO DE REFERENCIAS:
+Cuando cites información de los documentos, DEBES usar el siguiente formato EXACTO para las referencias:
+
+(Nombre del archivo .srt - MM:SS)
+
+Ejemplo correcto: (MEDITACION 107 LA CURA MILAGROSA MAESTRO ALANISO - 00:46)
+Ejemplo INCORRECTO: (00:00:46,840)
+
+SIEMPRE incluye:
+1. El nombre completo del archivo fuente (sin prefijos como [Spanish (auto-generated)])
+2. Un guión separador " - "
+3. El timestamp en formato MM:SS (sin milisegundos)
 
 DOCUMENTOS DISPONIBLES:
 {context}
 
 CONSULTA DEL USUARIO:
 {question}
+
+RECUERDA: Cada vez que cites información, usa el formato (Nombre archivo - MM:SS)
 '''
 
         QA_PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
@@ -592,6 +609,36 @@ div[data-testid="stTextInput"] label {
                             modified_answer = re.sub(r'\s*\(' + re.escape(number) + r'\)', info, modified_answer)
 
                         final_answer_html = f"<p>{modified_answer}</p>"
+                        
+                        # Agregar sección de citas textuales
+                        if sources:
+                            final_answer_html += "<h3>--- Citas Textuales ---</h3>"
+                            final_answer_html += "<ul>"
+                            
+                            for doc in sources:
+                                source_path = doc.metadata.get("source", "Fuente desconocida")
+                                source_file = os.path.basename(source_path)
+                                cleaned_name = clean_source_name(source_file)
+                                
+                                # Extraer timestamp
+                                timestamp_match = re.search(r'(\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3})', doc.page_content)
+                                if timestamp_match:
+                                    timestamp = timestamp_match.group(0)
+                                    short_timestamp = re.sub(r',\d{3}', '', timestamp)
+                                    source_info = f"(Fuente: {cleaned_name}, Timestamp: {short_timestamp})"
+                                else:
+                                    source_info = f"(Fuente: {cleaned_name}, Timestamp: No disponible)"
+                                
+                                # Limpiar el contenido del SRT
+                                quote_text = clean_srt_content(doc.page_content)
+                                
+                                # Formatear con colores
+                                highlighted_quote = f'<span style="color: yellow;">{quote_text}</span>'
+                                violet_source = f' <span style="color: violet;">{source_info}</span>'
+                                
+                                final_answer_html += f"<li>{highlighted_quote}{violet_source}</li>"
+                            
+                            final_answer_html += "</ul>"
                         # --- FIN DE LA MODIFICACIÓN ---
                         
                         # Marcar fin de procesamiento
