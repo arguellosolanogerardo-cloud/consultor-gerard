@@ -640,35 +640,6 @@ div[data-testid="stTextInput"] label {
                         if session_id:
                             st.session_state.logger.end_interaction(session_id, status="success")
 
-                        # --- Funcionalidad de Exportar ---
-                        st.markdown("---")
-                        st.subheader("📥 Exportar")
-                        
-                        # Crear dos columnas para los botones
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            # Botón HTML
-                            st.download_button(
-                                label="📄 Descargar como HTML",
-                                data=final_answer_html.encode('utf-8'),
-                                file_name="respuesta_gerard.html",
-                                mime="text/html",
-                                use_container_width=True
-                            )
-                        
-                        with col2:
-                            # Botón PDF con manejo de errores mejorado
-                            pdf_content = export_to_pdf(final_answer_html, user_question)
-                            if pdf_content:
-                                st.download_button(
-                                    label="📕 Descargar como PDF",
-                                    data=pdf_content,
-                                    file_name="respuesta_gerard.pdf",
-                                    mime="application/pdf",
-                                    use_container_width=True
-                                )
-
                 except Exception as e:
                     # Limpiar el placeholder del OVNI en caso de error
                     if gif_base64:
@@ -678,6 +649,47 @@ div[data-testid="stTextInput"] label {
                     # Finalizar logging con error
                     if session_id:
                         st.session_state.logger.end_interaction(session_id, status="error", error=str(e))
+            
+            # --- Funcionalidad de Exportar (fuera del contexto del mensaje) ---
+            # Solo mostrar si hay historial de chat con respuestas
+            if len(st.session_state.chat_history) > 0:
+                # Obtener la última respuesta del asistente
+                last_assistant_message = None
+                for msg in reversed(st.session_state.chat_history):
+                    if msg["role"] == "assistant":
+                        last_assistant_message = msg["content"]
+                        break
+                
+                if last_assistant_message:
+                    st.markdown("---")
+                    st.subheader("📥 Exportar última respuesta")
+                    
+                    # Crear dos columnas para los botones
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        # Botón HTML
+                        st.download_button(
+                            label="📄 Descargar como HTML",
+                            data=last_assistant_message.encode('utf-8'),
+                            file_name="respuesta_gerard.html",
+                            mime="text/html",
+                            use_container_width=True,
+                            key=f"html_btn_{len(st.session_state.chat_history)}"
+                        )
+                    
+                    with col2:
+                        # Botón PDF
+                        pdf_content = export_to_pdf(last_assistant_message, user_question)
+                        if pdf_content:
+                            st.download_button(
+                                label="📕 Descargar como PDF",
+                                data=pdf_content,
+                                file_name="respuesta_gerard.pdf",
+                                mime="application/pdf",
+                                use_container_width=True,
+                                key=f"pdf_btn_{len(st.session_state.chat_history)}"
+                            )
 
 if __name__ == "__main__":
     main()
