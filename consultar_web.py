@@ -204,6 +204,21 @@ def clean_srt_content(text):
     text = re.sub(r'^\d+\s*$', '', text, flags=re.MULTILINE)
     return '\n'.join(line for line in text.split('\n') if line.strip()).strip()
 
+def extract_plain_text(html_content):
+    """Extrae texto plano del contenido HTML para copiar al portapapeles."""
+    # Eliminar todas las etiquetas HTML
+    plain_text = re.sub('<[^<]+?>', '', html_content)
+    # Decodificar entidades HTML comunes
+    plain_text = plain_text.replace('&amp;', '&')
+    plain_text = plain_text.replace('&lt;', '<')
+    plain_text = plain_text.replace('&gt;', '>')
+    plain_text = plain_text.replace('&quot;', '"')
+    plain_text = plain_text.replace('&#39;', "'")
+    # Limpiar espacios múltiples y líneas vacías excesivas
+    plain_text = re.sub(r'\n\s*\n\s*\n+', '\n\n', plain_text)
+    plain_text = re.sub(r' +', ' ', plain_text)
+    return plain_text.strip()
+
 def export_to_pdf(html_content, user_question):
     """Convierte HTML a PDF para exportación."""
     try:
@@ -763,13 +778,13 @@ div[data-testid="stChatMessageContent"] {
                     st.markdown("---")
                     st.subheader("📥 Exportar última respuesta")
                     
-                    # Crear dos columnas para los botones
-                    col1, col2 = st.columns(2)
+                    # Crear tres columnas para los botones
+                    col1, col2, col3 = st.columns(3)
                     
                     with col1:
                         # Botón HTML
                         st.download_button(
-                            label="📄 Descargar como HTML",
+                            label="📄 Descargar HTML",
                             data=last_assistant_message.encode('utf-8'),
                             file_name="respuesta_gerard.html",
                             mime="text/html",
@@ -782,13 +797,40 @@ div[data-testid="stChatMessageContent"] {
                         pdf_content = export_to_pdf(last_assistant_message, user_question)
                         if pdf_content:
                             st.download_button(
-                                label="📕 Descargar como PDF",
+                                label="📕 Descargar PDF",
                                 data=pdf_content,
                                 file_name="respuesta_gerard.pdf",
                                 mime="application/pdf",
                                 use_container_width=True,
                                 key=f"pdf_btn_{len(st.session_state.chat_history)}"
                             )
+                    
+                    with col3:
+                        # Botón para copiar texto plano
+                        plain_text = extract_plain_text(last_assistant_message)
+                        # Agregar pregunta al inicio del texto
+                        full_text = f"Pregunta: {user_question}\n\n{plain_text}"
+                        
+                        # Usar download_button como alternativa para copiar
+                        st.download_button(
+                            label="📋 Copiar Texto",
+                            data=full_text.encode('utf-8'),
+                            file_name="respuesta_gerard.txt",
+                            mime="text/plain",
+                            use_container_width=True,
+                            key=f"txt_btn_{len(st.session_state.chat_history)}"
+                        )
+                    
+                    # Agregar área de texto expandible para copiar manualmente
+                    with st.expander("📝 Ver texto completo para copiar"):
+                        plain_text_for_copy = extract_plain_text(last_assistant_message)
+                        st.text_area(
+                            "Selecciona y copia el texto:",
+                            value=f"Pregunta: {user_question}\n\n{plain_text_for_copy}",
+                            height=300,
+                            key=f"text_area_{len(st.session_state.chat_history)}"
+                        )
+                        st.info("💡 Consejo: Haz clic dentro del cuadro de texto, presiona Ctrl+A (o Cmd+A en Mac) para seleccionar todo, luego Ctrl+C (o Cmd+C) para copiar.")
 
 if __name__ == "__main__":
     main()
