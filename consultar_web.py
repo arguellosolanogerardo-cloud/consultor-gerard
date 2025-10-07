@@ -596,6 +596,26 @@ def main():
   }
 }
 
+@keyframes pulse-magenta {
+  0% {
+    transform: scale(1);
+    text-shadow: 0 0 5px #CA0C8C;
+  }
+  50% {
+    transform: scale(1.05);
+    text-shadow: 0 0 15px #CA0C8C, 0 0 25px #CA0C8C;
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: 0 0 5px #CA0C8C;
+  }
+}
+
+.export-header {
+  color: #CA0C8C;
+  animation: pulse-magenta 1.5s infinite;
+}
+
 .nombre-label {
   font-family: 'Orbitron', sans-serif;
   font-size: 3rem;
@@ -1004,7 +1024,7 @@ div[data-testid="stChatMessageContent"] {
 
 
                 st.markdown("---")
-                st.subheader("📥 Exportar última respuesta")
+                st.markdown('<h3 class="export-header">📥 EXPORTAR HASTA LA ULTIMA RESPUESTA</h3>', unsafe_allow_html=True)
 
                 # Sanitizar el nombre del archivo a partir de todas las preguntas
                 sanitized_filename = sanitize_filename(combined_questions_for_filename)
