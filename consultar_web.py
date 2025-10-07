@@ -409,6 +409,23 @@ def main():
   letter-spacing: 0.5rem;
 }
 
+/* Responsive para tablets */
+@media (max-width: 768px) {
+  .title-gerard {
+    font-size: 4rem;
+    letter-spacing: 0.3rem;
+  }
+}
+
+/* Responsive para móviles */
+@media (max-width: 480px) {
+  .title-gerard {
+    font-size: 2.5rem;
+    letter-spacing: 0.2rem;
+    margin-bottom: 10px;
+  }
+}
+
 .welcome-message {
   font-family: 'Orbitron', sans-serif;
   font-size: 2.5rem;
@@ -546,34 +563,39 @@ div[data-testid="stTextInput"] label {
                         
                         # Marcar inicio de procesamiento
                         st.session_state.logger.mark_phase(session_id, "processing_start")
-                        
-                        final_answer_html = f"<p>{answer}</p>" # Empezar con el resumen
 
+                        # --- MODIFICACIÓN: Reemplazar citas numéricas por fuentes completas ---
+                        source_map = {}
                         if sources:
-                            final_answer_html += "<h3>--- Citas Textuales ---</h3>"
-                            quotes_html_list = "<ul>"
-                            
                             for doc in sources:
                                 source_path = doc.metadata.get("source", "Fuente desconocida")
                                 source_file = os.path.basename(source_path)
-                                cleaned_name = clean_source_name(source_file)
                                 
-                                timestamp_match = re.search(r'(\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3})', doc.page_content)
-                                if timestamp_match:
-                                    timestamp = timestamp_match.group(0)
-                                    short_timestamp = re.sub(r',\d{3}', '', timestamp)
-                                    source_info = f"(Fuente: {cleaned_name}, Timestamp: {short_timestamp})"
-                                else:
-                                    source_info = f"(Fuente: {cleaned_name}, Timestamp: No disponible)"
+                                # Extraer número de mensaje del nombre del archivo
+                                match = re.search(r'(?:MEDITACION|MENSAJE)\s*(\d+)', source_file, re.IGNORECASE)
+                                if match:
+                                    number = match.group(1)
+                                    
+                                    cleaned_name = clean_source_name(source_file)
+                                    timestamp_match = re.search(r'(\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3})', doc.page_content)
+                                    
+                                    if timestamp_match:
+                                        timestamp = timestamp_match.group(0)
+                                        short_timestamp = re.sub(r',\d{3}', '', timestamp)
+                                        source_info = f"(<span style='color: violet;'>Fuente: {cleaned_name}, Timestamp: {short_timestamp}</span>)"
+                                    else:
+                                        source_info = f"(<span style='color: violet;'>Fuente: {cleaned_name}, Timestamp: No disponible</span>)"
+                                    
+                                    source_map[number] = source_info
 
-                                quote_text = clean_srt_content(doc.page_content)
+                        # Reemplazar los números en el texto de la respuesta
+                        modified_answer = answer
+                        for number, info in source_map.items():
+                            # Usar regex para asegurar que solo se reemplazan números entre paréntesis
+                            modified_answer = re.sub(r'\s*\(' + re.escape(number) + r'\)', info, modified_answer)
 
-                                highlighted_quote = f'<span style="color: yellow;">{quote_text}</span>'
-                                violet_source = f' <span style="color: violet;">{source_info}</span>'
-                                quotes_html_list += f"<li>{highlighted_quote}{violet_source}</li>"
-
-                            quotes_html_list += "</ul>"
-                            final_answer_html += quotes_html_list
+                        final_answer_html = f"<p>{modified_answer}</p>"
+                        # --- FIN DE LA MODIFICACIÓN ---
                         
                         # Marcar fin de procesamiento
                         st.session_state.logger.mark_phase(session_id, "processing_end")
