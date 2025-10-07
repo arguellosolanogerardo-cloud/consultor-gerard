@@ -519,8 +519,16 @@ div[data-testid="stTextInput"] label {
         user_question = st.chat_input(f"Hola {st.session_state.user_name}, ¿en qué puedo ayudarte?")
 
         if user_question:
-            # Formatear la pregunta con animaciones
-            formatted_question = f'<span class="question-mark-start">❓</span><span class="question-text">{user_question}</span><span class="question-mark-end">❓</span>'
+            # Cargar el GIF de pregunta
+            pregunta_gif_base64 = load_gif_as_base64("assets/pregunta.gif")
+            
+            # Formatear la pregunta con el GIF de pregunta
+            if pregunta_gif_base64:
+                formatted_question = f'<img src="data:image/gif;base64,{pregunta_gif_base64}" width="30" height="30" style="display: inline-block; margin-right: 10px; animation: rotate 1.5s infinite;"><span class="question-text">{user_question}</span><img src="data:image/gif;base64,{pregunta_gif_base64}" width="30" height="30" style="display: inline-block; margin-left: 10px; animation: pulsateRed 1s infinite;">'
+            else:
+                # Fallback a emojis si el GIF no se puede cargar
+                formatted_question = f'<span class="question-mark-start">❓</span><span class="question-text">{user_question}</span><span class="question-mark-end">❓</span>'
+            
             st.session_state.chat_history.append({"role": "user", "content": formatted_question})
             with st.chat_message("user"):
                 st.markdown(formatted_question, unsafe_allow_html=True)
