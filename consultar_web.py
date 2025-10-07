@@ -204,42 +204,6 @@ def clean_srt_content(text):
     text = re.sub(r'^\d+\s*$', '', text, flags=re.MULTILINE)
     return '\n'.join(line for line in text.split('\n') if line.strip()).strip()
 
-def export_to_txt(html_content, user_question):
-    """Convierte HTML a texto plano para exportación TXT."""
-    # Remover tags HTML
-    plain_text = re.sub('<[^<]+?>', '', html_content)
-    # Agregar encabezado
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    header = f"GERARD - Respuesta\nFecha: {timestamp}\nPregunta: {user_question}\n\n{'='*60}\n\n"
-    return header + plain_text
-
-def export_to_markdown(html_content, user_question):
-    """Convierte HTML a Markdown para exportación."""
-    # Agregar encabezado
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    markdown = f"# GERARD - Respuesta\n\n"
-    markdown += f"**Fecha:** {timestamp}  \n"
-    markdown += f"**Pregunta:** {user_question}\n\n"
-    markdown += "---\n\n"
-    
-    # Convertir HTML básico a Markdown
-    content = html_content
-    # Convertir <h3> a ###
-    content = re.sub(r'<h3>(.*?)</h3>', r'### \1', content)
-    # Convertir <p> simplemente removiendo tags
-    content = re.sub(r'<p>(.*?)</p>', r'\1\n\n', content)
-    # Convertir <ul> y <li>
-    content = re.sub(r'<ul>', '', content)
-    content = re.sub(r'</ul>', '\n', content)
-    content = re.sub(r'<li>', '- ', content)
-    content = re.sub(r'</li>', '\n', content)
-    # Remover spans y otros tags
-    content = re.sub(r'<span[^>]*>(.*?)</span>', r'\1', content)
-    content = re.sub(r'<[^<]+?>', '', content)
-    
-    markdown += content
-    return markdown
-
 def export_to_pdf(html_content, user_question):
     """Convierte HTML a PDF para exportación."""
     try:
@@ -676,67 +640,34 @@ div[data-testid="stTextInput"] label {
                         if session_id:
                             st.session_state.logger.end_interaction(session_id, status="success")
 
-                        # --- Funcionalidad de Exportar y Compartir ---
+                        # --- Funcionalidad de Exportar ---
                         st.markdown("---")
+                        st.subheader("📥 Exportar")
                         
+                        # Crear dos columnas para los botones
                         col1, col2 = st.columns(2)
-
+                        
                         with col1:
-                            st.subheader("📥 Exportar")
-                            
                             # Botón HTML
                             st.download_button(
                                 label="📄 Descargar como HTML",
                                 data=final_answer_html.encode('utf-8'),
                                 file_name="respuesta_gerard.html",
-                                mime="text/html"
+                                mime="text/html",
+                                use_container_width=True
                             )
-                            
-                            # Botón TXT
-                            txt_content = export_to_txt(final_answer_html, user_question)
-                            st.download_button(
-                                label="📝 Descargar como TXT",
-                                data=txt_content.encode('utf-8'),
-                                file_name="respuesta_gerard.txt",
-                                mime="text/plain"
-                            )
-                            
-                            # Botón Markdown
-                            md_content = export_to_markdown(final_answer_html, user_question)
-                            st.download_button(
-                                label="📋 Descargar como Markdown",
-                                data=md_content.encode('utf-8'),
-                                file_name="respuesta_gerard.md",
-                                mime="text/markdown"
-                            )
-                            
-                            # Botón PDF con manejo de errores
-                            try:
-                                pdf_content = export_to_pdf(final_answer_html, user_question)
-                                if pdf_content:
-                                    st.download_button(
-                                        label="📕 Descargar como PDF",
-                                        data=pdf_content,
-                                        file_name="respuesta_gerard.pdf",
-                                        mime="application/pdf"
-                                    )
-                                else:
-                                    st.warning("⚠️ No se pudo generar el PDF. Intenta con otro formato.")
-                            except Exception as e:
-                                st.warning(f"⚠️ Error al generar PDF: {str(e)}")
                         
                         with col2:
-                            st.subheader("🔗 Compartir")
-                            # Para compartir, usamos una versión de texto plano simple
-                            plain_text_for_sharing = re.sub('<[^<]+?>', '', final_answer_html)
-                            # Limitar longitud del texto para evitar URLs demasiado largas
-                            max_length = 4000
-                            if len(plain_text_for_sharing) > max_length:
-                                plain_text_for_sharing = plain_text_for_sharing[:max_length] + "..."
-                            encoded_text = quote(plain_text_for_sharing)
-                            st.markdown(f"[📧 Compartir por Email](mailto:?subject=Respuesta%20de%20Gerard&body={encoded_text})")
-                            st.markdown(f"[💬 Compartir en WhatsApp](https://api.whatsapp.com/send?text={encoded_text})")
-                            st.markdown(f"[✈️ Compartir en Telegram](https://telegram.me/share/url?text={encoded_text})")
+                            # Botón PDF con manejo de errores mejorado
+                            pdf_content = export_to_pdf(final_answer_html, user_question)
+                            if pdf_content:
+                                st.download_button(
+                                    label="📕 Descargar como PDF",
+                                    data=pdf_content,
+                                    file_name="respuesta_gerard.pdf",
+                                    mime="application/pdf",
+                                    use_container_width=True
+                                )
 
                 except Exception as e:
                     # Limpiar el placeholder del OVNI en caso de error
