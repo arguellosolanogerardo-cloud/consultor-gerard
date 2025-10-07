@@ -1024,57 +1024,45 @@ div[data-testid="stChatMessageContent"] {
                 # Sanitizar el nombre del archivo a partir de todas las preguntas
                 sanitized_filename = sanitize_filename(combined_questions_for_filename)
                 
-                def get_download_link_html(data, filename, text, mime):
-                    b64 = base64.b64encode(data).decode()
-                    button_style = (
-                        "display: inline-block;"
-                        "padding: 0.4em 0.8em;"
-                        "background-color: #0066cc;"
-                        "color: white;"
-                        "text-align: center;"
-                        "text-decoration: none;"
-                        "border-radius: 4px;"
-                        "border: 1px solid #0066cc;"
-                        "font-weight: bold;"
-                    )
-                    return f'<a href="data:{mime};base64,{b64}" download="{filename}" style="{button_style}">{text}</a>'
-
                 # Crear tres columnas para los botones
                 col1, col2, col3 = st.columns(3)
-                
+
                 with col1:
                     # Botón HTML
-                    html_link = get_download_link_html(
-                        last_assistant_message.encode('utf-8'),
-                        f"{sanitized_filename}.html",
-                        "📄 HTML",
-                        "text/html"
+                    st.download_button(
+                        label="📄 HTML",
+                        data=last_assistant_message.encode('utf-8'),
+                        file_name=f"{sanitized_filename}.html",
+                        mime="text/html",
+                        use_container_width=True,
+                        help="Descargar la respuesta como archivo HTML."
                     )
-                    st.markdown(html_link, unsafe_allow_html=True)
-                
+
                 with col2:
                     # Botón PDF
                     pdf_content = export_to_pdf(last_assistant_message, questions_for_pdf)
                     if pdf_content:
-                        pdf_link = get_download_link_html(
-                            pdf_content,
-                            f"{sanitized_filename}.pdf",
-                            "📕 PDF",
-                            "application/pdf"
+                        st.download_button(
+                            label="📕 PDF",
+                            data=pdf_content,
+                            file_name=f"{sanitized_filename}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True,
+                            help="Descargar la respuesta como archivo PDF."
                         )
-                        st.markdown(pdf_link, unsafe_allow_html=True)
-                
+
                 with col3:
                     # Botón para descargar texto plano
                     plain_text = extract_plain_text(last_assistant_message)
                     full_text = f"Preguntas:\n{questions_for_txt}\n\nRespuesta:\n{plain_text}"
-                    txt_link = get_download_link_html(
-                        full_text.encode('utf-8'),
-                        f"{sanitized_filename}.txt",
-                        "📋 TXT",
-                        "text/plain"
+                    st.download_button(
+                        label="📋 TXT",
+                        data=full_text.encode('utf-8'),
+                        file_name=f"{sanitized_filename}.txt",
+                        mime="text/plain",
+                        use_container_width=True,
+                        help="Descargar la respuesta como archivo de texto plano."
                     )
-                    st.markdown(txt_link, unsafe_allow_html=True)
                 
                 # Agregar área de texto expandible para copiar manualmente
                 with st.expander("📝 Ver texto completo para copiar"):
