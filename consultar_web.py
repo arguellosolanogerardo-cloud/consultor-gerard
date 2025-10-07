@@ -505,6 +505,23 @@ def show_help_sidebar():
         st.markdown("**GERARD 3.0** - Analista Investigativo")
         st.markdown("*Modelo: gemini-pro-latest*")
 
+def sanitize_filename(text):
+    """
+    Sanitizes a string to be used as a valid filename.
+    - Replaces spaces with underscores.
+    - Removes characters that are not alphanumeric, underscores, or hyphens.
+    - Converts to lowercase.
+    - Truncates to a reasonable length.
+    """
+    # Replace spaces with underscores
+    text = text.replace(' ', '_')
+    # Remove invalid characters
+    text = re.sub(r'[^a-zA-Z0-9_-]', '', text)
+    # Convert to lowercase
+    text = text.lower()
+    # Truncate to 50 characters
+    return text[:50]
+
 def main():
     st.set_page_config(page_title="GERARD", page_icon="🔮")
     
@@ -1003,6 +1020,9 @@ div[data-testid="stChatMessageContent"] {
             if last_assistant_message and last_user_question:
                 st.markdown("---")
                 st.subheader("📥 Exportar última respuesta")
+
+                # Sanitizar el nombre del archivo
+                sanitized_filename = sanitize_filename(last_user_question)
                 
                 # Crear tres columnas para los botones
                 col1, col2, col3 = st.columns(3)
@@ -1012,7 +1032,7 @@ div[data-testid="stChatMessageContent"] {
                     st.download_button(
                         label="📄 HTML",
                         data=last_assistant_message.encode('utf-8'),
-                        file_name="respuesta_gerard.html",
+                        file_name=f"{sanitized_filename}.html",
                         mime="text/html",
                         use_container_width=True,
                         key="export_html_btn",
@@ -1026,7 +1046,7 @@ div[data-testid="stChatMessageContent"] {
                         st.download_button(
                             label="📕 PDF",
                             data=pdf_content,
-                            file_name="respuesta_gerard.pdf",
+                            file_name=f"{sanitized_filename}.pdf",
                             mime="application/pdf",
                             use_container_width=True,
                             key="export_pdf_btn",
@@ -1041,7 +1061,7 @@ div[data-testid="stChatMessageContent"] {
                     st.download_button(
                         label="📋 TXT",
                         data=full_text.encode('utf-8'),
-                        file_name="respuesta_gerard.txt",
+                        file_name=f"{sanitized_filename}.txt",
                         mime="text/plain",
                         use_container_width=True,
                         key="export_txt_btn",
