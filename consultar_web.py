@@ -608,7 +608,14 @@ div[data-testid="stTextInput"] label {
                             # Usar regex para asegurar que solo se reemplazan números entre paréntesis
                             modified_answer = re.sub(r'\s*\(' + re.escape(number) + r'\)', info, modified_answer)
 
-                        final_answer_html = f"<p>{modified_answer}</p>"
+                        # Aplicar color violeta a todo el texto dentro de paréntesis que no sea HTML
+                        formatted_answer = re.sub(
+                            r'\((?![^<]*>)([^)]+)\)',
+                            lambda m: f"(<span style='color: violet;'>{m.group(1)}</span>)",
+                            modified_answer
+                        )
+                        
+                        final_answer_html = f"<p>{formatted_answer}</p>"
                         
                         # Agregar sección de citas textuales
                         if sources:
