@@ -305,15 +305,12 @@ def main():
 @keyframes pulse {
   0% {
     transform: scale(1);
-    text-shadow: 0 0 3px #c07dfc, 0 0 5px #c07dfc;
   }
   50% {
     transform: scale(1.05);
-    text-shadow: 0 0 8px #c07dfc, 0 0 12px #c07dfc;
   }
   100% {
     transform: scale(1);
-    text-shadow: 0 0 3px #c07dfc, 0 0 5px #c07dfc;
   }
 }
 
