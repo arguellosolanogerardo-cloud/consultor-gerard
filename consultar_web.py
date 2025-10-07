@@ -339,43 +339,38 @@ def show_help_sidebar():
         
         guide_content = load_guide_content()
         
-        col1, col2, col3 = st.columns(3)
+        # Descargar como Markdown
+        st.download_button(
+            label="📄 Descargar Guía como Markdown",
+            data=guide_content.encode('utf-8'),
+            file_name="Guia_Gerard.md",
+            mime="text/markdown",
+            use_container_width=True,
+            help="Descargar guía en formato Markdown"
+        )
         
-        with col1:
-            # Descargar como Markdown
+        # Descargar como texto plano
+        plain_guide = re.sub(r'[#*`]', '', guide_content)
+        st.download_button(
+            label="📋 Descargar Guía como TXT",
+            data=plain_guide.encode('utf-8'),
+            file_name="Guia_Gerard.txt",
+            mime="text/plain",
+            use_container_width=True,
+            help="Descargar guía en formato texto"
+        )
+        
+        # Descargar como PDF
+        pdf_guide = export_guide_to_pdf()
+        if pdf_guide:
             st.download_button(
-                label="📄 MD",
-                data=guide_content.encode('utf-8'),
-                file_name="Guia_Gerard.md",
-                mime="text/markdown",
+                label="📕 Descargar Guía como PDF",
+                data=pdf_guide,
+                file_name="Guia_Gerard.pdf",
+                mime="application/pdf",
                 use_container_width=True,
-                help="Descargar guía en formato Markdown"
+                help="Descargar guía en formato PDF"
             )
-        
-        with col2:
-            # Descargar como texto plano
-            plain_guide = re.sub(r'[#*`]', '', guide_content)
-            st.download_button(
-                label="📋 TXT",
-                data=plain_guide.encode('utf-8'),
-                file_name="Guia_Gerard.txt",
-                mime="text/plain",
-                use_container_width=True,
-                help="Descargar guía en formato texto"
-            )
-        
-        with col3:
-            # Descargar como PDF
-            pdf_guide = export_guide_to_pdf()
-            if pdf_guide:
-                st.download_button(
-                    label="📕 PDF",
-                    data=pdf_guide,
-                    file_name="Guia_Gerard.pdf",
-                    mime="application/pdf",
-                    use_container_width=True,
-                    help="Descargar guía en formato PDF"
-                )
         
         st.markdown("---")
         
@@ -500,22 +495,7 @@ def show_help_sidebar():
         st.markdown("**GERARD 3.0** - Analista Investigativo")
         st.markdown("*Modelo: gemini-pro-latest*")
 
-def sanitize_filename(text):
-    """
-    Sanitizes a string to be used as a valid filename.
-    - Replaces spaces with underscores.
-    - Removes characters that are not alphanumeric, underscores, or hyphens.
-    - Converts to lowercase.
-    - Truncates to a reasonable length.
-    """
-    # Replace spaces with underscores
-    text = text.replace(' ', '_')
-    # Remove invalid characters
-    text = re.sub(r'[^a-zA-Z0-9_-]', '', text)
-    # Convert to lowercase
-    text = text.lower()
-    # Truncate to 200 characters to allow for longer filenames
-    return text[:200]
+
 
 def main():
     st.set_page_config(page_title="GERARD", page_icon="🔮")
@@ -1010,9 +990,6 @@ div[data-testid="stChatMessageContent"] {
                     all_user_questions.append(question_text.strip())
             
             if last_assistant_message and all_user_questions:
-                # Unir todas las preguntas en un solo string para el nombre del archivo
-                combined_questions_for_filename = " ".join(all_user_questions)
-
                 # Unir todas las preguntas con formato para el contenido de los archivos
                 questions_for_pdf = "<br/>".join(all_user_questions)
                 questions_for_txt = "\n".join([f"- {q}" for q in all_user_questions])
@@ -1021,48 +998,41 @@ div[data-testid="stChatMessageContent"] {
                 st.markdown("---")
                 st.markdown('<h3 class="export-header">📥 EXPORTAR HASTA LA ULTIMA RESPUESTA</h3>', unsafe_allow_html=True)
 
-                # Sanitizar el nombre del archivo a partir de todas las preguntas
-                sanitized_filename = sanitize_filename(combined_questions_for_filename)
+                # Generate a timestamp-based filename
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                sanitized_filename = f"gerard_respuesta_{timestamp}"
                 
-                # Crear tres columnas para los botones
-                col1, col2, col3 = st.columns(3)
+                # Botones de descarga
+                st.download_button(
+                    label="📄 Descargar como HTML",
+                    data=last_assistant_message.encode('utf-8'),
+                    file_name=f"{sanitized_filename}.html",
+                    mime="text/html",
+                    use_container_width=True,
+                    help="Descargar la respuesta como archivo HTML."
+                )
 
-                with col1:
-                    # Botón HTML
+                pdf_content = export_to_pdf(last_assistant_message, questions_for_pdf)
+                if pdf_content:
                     st.download_button(
-                        label="📄 HTML",
-                        data=last_assistant_message.encode('utf-8'),
-                        file_name=f"{sanitized_filename}.html",
-                        mime="text/html",
+                        label="📕 Descargar como PDF",
+                        data=pdf_content,
+                        file_name=f"{sanitized_filename}.pdf",
+                        mime="application/pdf",
                         use_container_width=True,
-                        help="Descargar la respuesta como archivo HTML."
+                        help="Descargar la respuesta como archivo PDF."
                     )
 
-                with col2:
-                    # Botón PDF
-                    pdf_content = export_to_pdf(last_assistant_message, questions_for_pdf)
-                    if pdf_content:
-                        st.download_button(
-                            label="📕 PDF",
-                            data=pdf_content,
-                            file_name=f"{sanitized_filename}.pdf",
-                            mime="application/pdf",
-                            use_container_width=True,
-                            help="Descargar la respuesta como archivo PDF."
-                        )
-
-                with col3:
-                    # Botón para descargar texto plano
-                    plain_text = extract_plain_text(last_assistant_message)
-                    full_text = f"Preguntas:\n{questions_for_txt}\n\nRespuesta:\n{plain_text}"
-                    st.download_button(
-                        label="📋 TXT",
-                        data=full_text.encode('utf-8'),
-                        file_name=f"{sanitized_filename}.txt",
-                        mime="text/plain",
-                        use_container_width=True,
-                        help="Descargar la respuesta como archivo de texto plano."
-                    )
+                plain_text = extract_plain_text(last_assistant_message)
+                full_text = f"Preguntas:\n{questions_for_txt}\n\nRespuesta:\n{plain_text}"
+                st.download_button(
+                    label="📋 Descargar como TXT",
+                    data=full_text.encode('utf-8'),
+                    file_name=f"{sanitized_filename}.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    help="Descargar la respuesta como archivo de texto plano."
+                )
                 
                 # Agregar área de texto expandible para copiar manualmente
                 with st.expander("📝 Ver texto completo para copiar"):
