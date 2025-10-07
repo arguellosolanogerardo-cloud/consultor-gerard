@@ -519,8 +519,8 @@ def sanitize_filename(text):
     text = re.sub(r'[^a-zA-Z0-9_-]', '', text)
     # Convert to lowercase
     text = text.lower()
-    # Truncate to 50 characters
-    return text[:50]
+    # Truncate to 200 characters to allow for longer filenames
+    return text[:200]
 
 def main():
     st.set_page_config(page_title="GERARD", page_icon="🔮")
