@@ -563,16 +563,16 @@ div[data-testid="stChatMessageContent"] {
             with st.chat_message("assistant"):
                 # Mostrar animación de OVNI personalizada
                 gif_base64 = load_gif_as_base64("assets/ovni.gif")
-                                if gif_base64:
-                                    placeholder = st.empty()
-                                    placeholder.markdown(f"""
-                                    <div style=\"display: flex; align-items: center; justify-content: center; margin: 20px 0;\">
-                                        <p style=\"color: yellow; font-size: 1.5rem; font-weight: bold; margin-right: 10px;\">
-                                            Buscando...
-                                        </p>
-                                        <img src=\"data:image/gif;base64,{gif_base64}\" width=\"150\" height=\"150\">
-                                    </div>
-                                    """, unsafe_allow_html=True)                
+                if gif_base64:
+                    placeholder = st.empty()
+                    placeholder.markdown(f"""
+                    <div style=\"display: flex; align-items: center; justify-content: center; margin: 20px 0;\">
+                        <p style=\"color: yellow; font-size: 1.5rem; font-weight: bold; margin-right: 10px;\">
+                            Buscando...
+                        </p>
+                        <img src=\"data:image/gif;base64,{gif_base64}\" width=\"150\" height=\"150\">
+                    </div>
+                    """, unsafe_allow_html=True)
                 session_id = None
                 try:
                         # Obtener información de la request (User-Agent, etc.)
