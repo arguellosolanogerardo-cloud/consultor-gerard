@@ -1002,33 +1002,40 @@ div[data-testid="stChatMessageContent"] {
         # --- Funcionalidad de Exportar (fuera del contexto del mensaje) ---
         # Solo mostrar si hay historial de chat con respuestas
         if len(st.session_state.chat_history) > 0:
-            # Obtener la última respuesta del asistente y la última pregunta
+            # Obtener la última respuesta del asistente
             last_assistant_message = None
-            last_user_question = None
-            
-            # Buscar la última respuesta y su pregunta correspondiente
             for i in range(len(st.session_state.chat_history) - 1, -1, -1):
-                msg = st.session_state.chat_history[i]
-                if msg["role"] == "assistant" and last_assistant_message is None:
-                    last_assistant_message = msg["content"]
-                elif msg["role"] == "user" and last_user_question is None and last_assistant_message is not None:
-                    # Extraer el texto de la pregunta del HTML formateado
-                    question_text = re.sub('<[^<]+?>', '', msg["content"])
-                    last_user_question = question_text.strip()
+                if st.session_state.chat_history[i]["role"] == "assistant":
+                    last_assistant_message = st.session_state.chat_history[i]["content"]
                     break
+
+            # Recopilar todas las preguntas del usuario en la sesión
+            all_user_questions = []
+            for msg in st.session_state.chat_history:
+                if msg["role"] == "user":
+                    question_text = re.sub('<[^<]+?>', '', msg["content"])
+                    all_user_questions.append(question_text.strip())
             
-            if last_assistant_message and last_user_question:
+            if last_assistant_message and all_user_questions:
+                # Unir todas las preguntas en un solo string para el nombre del archivo
+                combined_questions_for_filename = " ".join(all_user_questions)
+
+                # Unir todas las preguntas con formato para el contenido de los archivos
+                questions_for_pdf = "<br/>".join(all_user_questions)
+                questions_for_txt = "\n".join([f"- {q}" for q in all_user_questions])
+
+
                 st.markdown("---")
                 st.subheader("📥 Exportar última respuesta")
 
-                # Sanitizar el nombre del archivo
-                sanitized_filename = sanitize_filename(last_user_question)
+                # Sanitizar el nombre del archivo a partir de todas las preguntas
+                sanitized_filename = sanitize_filename(combined_questions_for_filename)
                 
                 # Crear tres columnas para los botones
                 col1, col2, col3 = st.columns(3)
                 
                 with col1:
-                    # Botón HTML
+                    # Botón HTML (el nombre del archivo es lo único que cambia)
                     st.download_button(
                         label="📄 HTML",
                         data=last_assistant_message.encode('utf-8'),
@@ -1041,7 +1048,7 @@ div[data-testid="stChatMessageContent"] {
                 
                 with col2:
                     # Botón PDF
-                    pdf_content = export_to_pdf(last_assistant_message, last_user_question)
+                    pdf_content = export_to_pdf(last_assistant_message, questions_for_pdf)
                     if pdf_content:
                         st.download_button(
                             label="📕 PDF",
@@ -1056,7 +1063,7 @@ div[data-testid="stChatMessageContent"] {
                 with col3:
                     # Botón para descargar texto plano
                     plain_text = extract_plain_text(last_assistant_message)
-                    full_text = f"Pregunta: {last_user_question}\n\n{plain_text}"
+                    full_text = f"Preguntas:\n{questions_for_txt}\n\nRespuesta:\n{plain_text}"
                     
                     st.download_button(
                         label="📋 TXT",
@@ -1073,7 +1080,7 @@ div[data-testid="stChatMessageContent"] {
                     plain_text_for_copy = extract_plain_text(last_assistant_message)
                     st.text_area(
                         "Selecciona y copia el texto:",
-                        value=f"Pregunta: {last_user_question}\n\n{plain_text_for_copy}",
+                        value=f"Preguntas:\n{questions_for_txt}\n\nRespuesta:\n{plain_text_for_copy}",
                         height=300,
                         key="export_text_area"
                     )
