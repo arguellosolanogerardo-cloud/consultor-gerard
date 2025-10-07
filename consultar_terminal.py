@@ -19,6 +19,7 @@ Uso:
 
 import os
 import re
+import gender_guesser.detector as gender
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_community.vectorstores import FAISS
 from langchain.chains import ConversationalRetrievalChain
@@ -43,6 +44,64 @@ if not api_key:
 
 # Ruta al índice FAISS
 FAISS_INDEX_PATH = "faiss_index"
+
+# Inicializar detector de género
+gender_detector = gender.Detector()
+
+def detect_gender(name):
+    """
+    Detecta el género de un nombre usando gender-guesser y una lista de nombres comunes en español.
+    Retorna 'male' o 'female', por defecto 'male' si no se puede determinar.
+    """
+    # Tomar solo el primer nombre y convertir a minúsculas para comparación
+    first_name = name.strip().split()[0] if name.strip() else name
+    first_name_lower = first_name.lower()
+    
+    # Listas de nombres femeninos y masculinos comunes en español
+    female_names = {
+        'maria', 'ana', 'rosa', 'carmen', 'laura', 'marta', 'elena', 'isabel', 
+        'cristina', 'patricia', 'lucia', 'sara', 'paula', 'claudia', 'beatriz',
+        'silvia', 'pilar', 'raquel', 'monica', 'angela', 'teresa', 'lorena',
+        'natalia', 'veronica', 'susana', 'alicia', 'rocio', 'yolanda', 'gloria',
+        'mercedes', 'julia', 'carolina', 'daniela', 'andrea', 'valeria', 'camila',
+        'sofia', 'valentina', 'isabella', 'gabriela', 'mariana', 'alejandra',
+        'fernanda', 'paola', 'carolina', 'adriana', 'marcela', 'diana', 'sandra',
+        'jessica', 'karen', 'vanessa', 'stephanie', 'katherine', 'nicole', 'emily',
+        'ashley', 'michelle', 'brittany', 'amber', 'crystal', 'melissa', 'rebecca',
+        'martha', 'ruth', 'esther', 'judith', 'deborah', 'sarah', 'hannah', 'rachel',
+        'leah', 'anna', 'elizabeth', 'mary', 'linda', 'barbara', 'susan', 'karen',
+        'nancy', 'betty', 'helen', 'dorothy', 'sandra', 'ashley', 'kimberly',
+        'donna', 'emily', 'carol', 'michelle', 'amanda', 'melissa', 'deborah'
+    }
+    
+    male_names = {
+        'juan', 'jose', 'antonio', 'manuel', 'francisco', 'david', 'carlos',
+        'miguel', 'javier', 'pedro', 'jesus', 'alejandro', 'fernando', 'sergio',
+        'luis', 'pablo', 'jorge', 'alberto', 'rafael', 'daniel', 'andres',
+        'roberto', 'ricardo', 'eduardo', 'enrique', 'angel', 'ramon', 'vicente',
+        'raul', 'oscar', 'jaime', 'ignacio', 'diego', 'adrian', 'ivan', 'ruben',
+        'alvaro', 'marcos', 'cesar', 'guillermo', 'alfredo', 'santiago', 'martin',
+        'nicolas', 'sebastian', 'mateo', 'benjamin', 'samuel', 'gabriel', 'leonardo',
+        'john', 'michael', 'david', 'james', 'robert', 'william', 'richard',
+        'joseph', 'thomas', 'charles', 'christopher', 'daniel', 'matthew', 'anthony',
+        'mark', 'donald', 'steven', 'paul', 'andrew', 'joshua', 'kenneth', 'kevin',
+        'brian', 'george', 'timothy', 'ronald', 'edward', 'jason', 'jeffrey'
+    }
+    
+    # Primero verificar en las listas personalizadas
+    if first_name_lower in female_names:
+        return 'female'
+    elif first_name_lower in male_names:
+        return 'male'
+    
+    # Si no está en las listas, usar gender-guesser
+    detected = gender_detector.get_gender(first_name)
+    
+    # gender-guesser retorna: 'male', 'female', 'mostly_male', 'mostly_female', 'andy' (andrógino), 'unknown'
+    if detected in ['female', 'mostly_female']:
+        return 'female'
+    else:
+        return 'male'  # Por defecto masculino para casos ambiguos
 
 def get_conversational_chain():
     """
@@ -407,7 +466,9 @@ def main():
     print(Fore.CYAN + "GERARD listo. Escribe tu pregunta o 'salir' para terminar." + Style.RESET_ALL)
     
     user_name = input("Por favor, introduce tu nombre para comenzar: ")
-    print(Fore.GREEN + f"\n¡Hola, {user_name}! Puedes empezar a preguntar." + Style.RESET_ALL)
+    user_gender = detect_gender(user_name)
+    gender_suffix = "A" if user_gender == 'female' else "O"
+    print(Fore.GREEN + f"\nBIENVENID{gender_suffix} {user_name.upper()}! Puedes empezar a preguntar." + Style.RESET_ALL)
 
     while True:
         user_question = input(f"\nTu pregunta {user_name.upper()}: ")
