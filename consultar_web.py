@@ -42,6 +42,9 @@ from io import BytesIO
 # Importar sistema de logging
 from interaction_logger import InteractionLogger
 
+# Para leer markdown
+import markdown
+
 # Cargar variables de entorno
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
@@ -290,9 +293,227 @@ def export_to_pdf(html_content, user_question):
         st.error(f"Error al generar PDF: {str(e)}")
         return None
 
+def load_guide_content():
+    """Carga el contenido de la guía desde el archivo markdown."""
+    try:
+        with open("GUIA_MODELOS_PREGUNTA_GERARD.md", "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"Error al cargar la guía: {e}"
+
+def export_guide_to_pdf():
+    """Convierte la guía completa a PDF."""
+    try:
+        guide_content = load_guide_content()
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter,
+                               rightMargin=72, leftMargin=72,
+                               topMargin=72, bottomMargin=18)
+        
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Convertir markdown a texto plano
+        plain_text = re.sub(r'#+\s+', '', guide_content)  # Remover headers markdown
+        plain_text = re.sub(r'\*\*([^*]+)\*\*', r'\1', plain_text)  # Remover bold
+        plain_text = re.sub(r'`([^`]+)`', r'\1', plain_text)  # Remover code
+        
+        # Dividir en párrafos
+        paragraphs = plain_text.split('\n')
+        for para in paragraphs:
+            if para.strip():
+                safe_para = para.strip().replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                try:
+                    elements.append(Paragraph(safe_para, styles['BodyText']))
+                    elements.append(Spacer(1, 0.1*inch))
+                except:
+                    continue
+        
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer.getvalue()
+    except Exception as e:
+        st.error(f"Error al generar PDF de la guía: {e}")
+        return None
+
+def show_help_sidebar():
+    """Muestra la sidebar con la guía de ayuda y botones de descarga."""
+    with st.sidebar:
+        st.markdown("# 📚 AYUDA Y GUÍA DE USO")
+        st.markdown("---")
+        
+        # Sección de descarga de la guía completa
+        st.markdown("### 📥 Descargar Guía Completa")
+        
+        guide_content = load_guide_content()
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            # Descargar como Markdown
+            st.download_button(
+                label="📄 MD",
+                data=guide_content.encode('utf-8'),
+                file_name="Guia_Gerard.md",
+                mime="text/markdown",
+                use_container_width=True,
+                help="Descargar guía en formato Markdown"
+            )
+        
+        with col2:
+            # Descargar como texto plano
+            plain_guide = re.sub(r'[#*`]', '', guide_content)
+            st.download_button(
+                label="📋 TXT",
+                data=plain_guide.encode('utf-8'),
+                file_name="Guia_Gerard.txt",
+                mime="text/plain",
+                use_container_width=True,
+                help="Descargar guía en formato texto"
+            )
+        
+        with col3:
+            # Descargar como PDF
+            pdf_guide = export_guide_to_pdf()
+            if pdf_guide:
+                st.download_button(
+                    label="📕 PDF",
+                    data=pdf_guide,
+                    file_name="Guia_Gerard.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    help="Descargar guía en formato PDF"
+                )
+        
+        st.markdown("---")
+        
+        # Tips rápidos
+        with st.expander("💡 Tips Rápidos"):
+            st.markdown("""
+            **Cómo hacer mejores preguntas:**
+            - Sé específico con el tema
+            - Usa nombres de maestros (ALANISO, AXEL, etc.)
+            - Combina términos: "Maestro ALANISO + evacuación"
+            - Pregunta por números: "Meditación 107"
+            
+            **Ejemplos:**
+            - ✅ "¿Qué dice sobre la cura milagrosa?"
+            - ✅ "Busca mensajes del Maestro AZEN"
+            - ❌ "Dime algo" (muy vago)
+            """)
+        
+        # Categorías de búsqueda
+        with st.expander("🎯 Categorías de Búsqueda"):
+            st.markdown("""
+            1. **Por tema:** evacuación, naves, sanación
+            2. **Por maestro:** ALANISO, AXEL, ADIEL, etc.
+            3. **Por concepto:** Gran Madre, túneles dimensionales
+            4. **Por número:** Meditación 107, Mensaje 686
+            5. **Por fecha:** Navidad, Reyes Magos
+            6. **Comparativas:** Relacionar conceptos
+            """)
+        
+        # Ejemplos de preguntas
+        with st.expander("⚡ Ejemplos de Preguntas"):
+            st.markdown("""
+            **Preguntas efectivas:**
+            
+            📌 "¿Qué enseñanzas hay sobre la evacuación?"
+            
+            📌 "Busca mensajes del Maestro ALANISO sobre sanación"
+            
+            📌 "¿Qué dice la Meditación 555?"
+            
+            📌 "Explícame sobre las esferas de luz"
+            
+            📌 "¿Qué conexión hay entre las pirámides y los ángeles?"
+            """)
+        
+        # Maestros disponibles
+        with st.expander("👥 Maestros Disponibles"):
+            st.markdown("""
+            **9 Maestros:**
+            - **ALANISO** - Maestro principal
+            - **AXEL** - Organizador de naves
+            - **ADIEL** - Enfoque en niños
+            - **AZOES** - Mensajes específicos
+            - **AVIATAR** - Vidas pasadas
+            - **ALADIM** - Comunicación
+            - **ALIESTRO** - Protección
+            - **ALAN** - Sanación
+            - **AZEN** - Ejército de luz
+            
+            **Entidades Superiores:**
+            - EL PADRE AMOR
+            - GRAN MAESTRO JESÚS
+            - LA GRAN MADRE
+            """)
+        
+        # Vocabulario clave
+        with st.expander("📖 Vocabulario Clave"):
+            st.markdown("""
+            **Términos frecuentes:**
+            - Evacuación
+            - Naves / Esferas de luz
+            - Ejército de luz
+            - Túnel dimensional
+            - Sanación / Cura milagrosa
+            - Hermanos cósmicos
+            - Cambio de eras
+            - Nave nodriza
+            - Tercera dimensión
+            - Mundos evolucionados
+            - Pirámides
+            - Mensajes ocultos
+            """)
+        
+        # Consejos avanzados
+        with st.expander("🚀 Tips Avanzados"):
+            st.markdown("""
+            **Aprovecha el modelo Gemini:**
+            
+            🔹 **Temperatura 0.3** = Respuestas consistentes y precisas
+            
+            🔹 **Búsqueda iterativa:** Haz preguntas de seguimiento
+            
+            🔹 **Contexto conversacional:** GERARD recuerda la conversación
+            
+            🔹 **Comparaciones:** "Compara enseñanzas de ALANISO vs AXEL"
+            
+            🔹 **Profundización:** "De esa información, profundiza en..."
+            """)
+        
+        # Formato de referencias
+        with st.expander("📍 Formato de Referencias"):
+            st.markdown("""
+            **Cómo leer las citas:**
+            
+            Las referencias aparecen como:
+            ```
+            (Nombre archivo - MM:SS)
+            ```
+            
+            **Ejemplo:**
+            ```
+            (MEDITACION 107 LA CURA MILAGROSA 
+             MAESTRO ALANISO - 00:46)
+            ```
+            
+            **Colores:**
+            - 🔵 **Azul:** Citas textuales
+            - 🟣 **Violeta:** Referencias (archivo + tiempo)
+            """)
+        
+        st.markdown("---")
+        st.markdown("**GERARD 3.0** - Analista Investigativo")
+        st.markdown("*Modelo: gemini-pro-latest*")
 
 def main():
     st.set_page_config(page_title="GERARD", page_icon="🔮")
+    
+    # Mostrar sidebar con ayuda
+    show_help_sidebar()
+    
     st.markdown('''
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
