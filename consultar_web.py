@@ -225,90 +225,74 @@ def export_to_markdown(html_content, user_question):
 
 def export_to_pdf(html_content, user_question):
     """Convierte HTML a PDF para exportación."""
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter,
-                           rightMargin=72, leftMargin=72,
-                           topMargin=72, bottomMargin=18)
-    
-    # Contenedor para los elementos del PDF
-    elements = []
-    
-    # Estilos
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        textColor='purple',
-        spaceAfter=30,
-        alignment=1  # Center
-    )
-    
-    heading_style = ParagraphStyle(
-        'CustomHeading',
-        parent=styles['Heading2'],
-        fontSize=14,
-        textColor='darkblue',
-        spaceAfter=12
-    )
-    
-    normal_style = styles['BodyText']
-    normal_style.fontSize = 11
-    normal_style.leading = 14
-    
-    # Título
-    elements.append(Paragraph("GERARD - Respuesta", title_style))
-    elements.append(Spacer(1, 0.2*inch))
-    
-    # Metadata
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    elements.append(Paragraph(f"<b>Fecha:</b> {timestamp}", normal_style))
-    elements.append(Paragraph(f"<b>Pregunta:</b> {user_question}", normal_style))
-    elements.append(Spacer(1, 0.3*inch))
-    
-    # Línea separadora
-    elements.append(Paragraph("<hr/>", normal_style))
-    elements.append(Spacer(1, 0.2*inch))
-    
-    # Convertir HTML a texto con formato simple para PDF
-    content = html_content
-    
-    # Procesar h3 tags
-    h3_pattern = re.compile(r'<h3>(.*?)</h3>', re.DOTALL)
-    for match in h3_pattern.finditer(content):
-        heading_text = match.group(1)
-        content = content.replace(match.group(0), f'|||HEADING|||{heading_text}|||HEADING|||')
-    
-    # Procesar listas
-    content = re.sub(r'<ul>', '', content)
-    content = re.sub(r'</ul>', '', content)
-    content = re.sub(r'<li>', '• ', content)
-    content = re.sub(r'</li>', '<br/>', content)
-    
-    # Remover otros tags HTML pero mantener <br/>
-    content = re.sub(r'<(?!br/>)[^<]+?>', '', content)
-    
-    # Dividir por secciones
-    parts = content.split('|||HEADING|||')
-    
-    for i, part in enumerate(parts):
-        if part.strip():
-            if i > 0 and i % 2 == 1:  # Es un heading
-                elements.append(Spacer(1, 0.2*inch))
-                elements.append(Paragraph(part.strip(), heading_style))
-            else:  # Es contenido normal
-                # Dividir por párrafos
-                paragraphs = part.split('<br/>')
-                for para in paragraphs:
-                    if para.strip():
-                        elements.append(Paragraph(para.strip(), normal_style))
-                        elements.append(Spacer(1, 0.1*inch))
-    
-    # Construir PDF
-    doc.build(elements)
-    
-    buffer.seek(0)
-    return buffer.getvalue()
+    try:
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter,
+                               rightMargin=72, leftMargin=72,
+                               topMargin=72, bottomMargin=18)
+        
+        # Contenedor para los elementos del PDF
+        elements = []
+        
+        # Estilos
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            alignment=1  # Center
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12
+        )
+        
+        normal_style = styles['BodyText']
+        normal_style.fontSize = 10
+        normal_style.leading = 13
+        
+        # Título
+        elements.append(Paragraph("GERARD - Respuesta", title_style))
+        elements.append(Spacer(1, 0.2*inch))
+        
+        # Metadata
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        elements.append(Paragraph(f"<b>Fecha:</b> {timestamp}", normal_style))
+        
+        # Escapar caracteres especiales en la pregunta
+        safe_question = user_question.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        elements.append(Paragraph(f"<b>Pregunta:</b> {safe_question}", normal_style))
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # Convertir HTML a texto plano para evitar problemas
+        plain_text = re.sub('<[^<]+?>', '', html_content)
+        
+        # Dividir en párrafos y agregar al PDF
+        paragraphs = plain_text.split('\n')
+        for para in paragraphs:
+            if para.strip():
+                # Escapar caracteres especiales
+                safe_para = para.strip().replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                try:
+                    elements.append(Paragraph(safe_para, normal_style))
+                    elements.append(Spacer(1, 0.1*inch))
+                except Exception as e:
+                    # Si un párrafo específico causa error, continuar con el siguiente
+                    continue
+        
+        # Construir PDF
+        doc.build(elements)
+        
+        buffer.seek(0)
+        return buffer.getvalue()
+    except Exception as e:
+        # Si hay error en la generación del PDF, retornar None
+        st.error(f"Error al generar PDF: {str(e)}")
+        return None
 
 
 def main():
@@ -645,14 +629,20 @@ div[data-testid="stTextInput"] label {
                                 mime="text/markdown"
                             )
                             
-                            # Botón PDF
-                            pdf_content = export_to_pdf(final_answer_html, user_question)
-                            st.download_button(
-                                label="📕 Descargar como PDF",
-                                data=pdf_content,
-                                file_name="respuesta_gerard.pdf",
-                                mime="application/pdf"
-                            )
+                            # Botón PDF con manejo de errores
+                            try:
+                                pdf_content = export_to_pdf(final_answer_html, user_question)
+                                if pdf_content:
+                                    st.download_button(
+                                        label="📕 Descargar como PDF",
+                                        data=pdf_content,
+                                        file_name="respuesta_gerard.pdf",
+                                        mime="application/pdf"
+                                    )
+                                else:
+                                    st.warning("⚠️ No se pudo generar el PDF. Intenta con otro formato.")
+                            except Exception as e:
+                                st.warning(f"⚠️ Error al generar PDF: {str(e)}")
                         
                         with col2:
                             st.subheader("🔗 Compartir")
