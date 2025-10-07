@@ -805,7 +805,7 @@ div[data-testid="stChatMessageContent"] {
             with st.chat_message("user"):
                 st.markdown(formatted_question, unsafe_allow_html=True)
 
-            with st.chat_message("assistant"):
+            with st.chat_message("assistant", avatar="assets/ufo.gif"):
                 # Mostrar animación de OVNI personalizada
                 gif_base64 = load_gif_as_base64("assets/ovni.gif")
                 if gif_base64:
