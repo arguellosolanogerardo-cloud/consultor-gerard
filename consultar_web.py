@@ -702,8 +702,8 @@ li {
 
 /* Contenedor principal más ancho */
 .stChatMessage {
-  max-width: 95% !important;
-  width: 95% !important;
+  max-width: 100% !important;
+  width: 100% !important;
 }
 
 /* Mensajes del chat */
@@ -811,11 +811,11 @@ div[data-testid="stChatMessageContent"] {
                 if gif_base64:
                     placeholder = st.empty()
                     placeholder.markdown(f"""
-                    <div style=\"display: flex; align-items: center; justify-content: center; margin: 20px 0;\">
-                        <p style=\"color: yellow; font-size: 1.5rem; font-weight: bold; margin-right: 10px;\">
+                    <div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 20px 0;\">
+                        <img src=\"data:image/gif;base64,{gif_base64}\" width=\"150\" height=\"150\">
+                        <p style=\"color: yellow; font-size: 1.5rem; font-weight: bold; margin-top: 10px;\">
                             Buscando...
                         </p>
-                        <img src=\"data:image/gif;base64,{gif_base64}\" width=\"150\" height=\"150\">
                     </div>
                     """, unsafe_allow_html=True)
                 session_id = None
