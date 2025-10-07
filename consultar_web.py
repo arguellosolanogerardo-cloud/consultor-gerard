@@ -42,9 +42,6 @@ from io import BytesIO
 # Importar sistema de logging
 from interaction_logger import InteractionLogger
 
-# Para leer markdown
-import markdown
-
 # Cargar variables de entorno
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
