@@ -406,7 +406,7 @@ def main():
 
 .welcome-message {
   font-family: 'Orbitron', sans-serif;
-  font-size: 2.5rem;
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
   font-weight: 700;
   color: #00ff00;
   text-align: center;
