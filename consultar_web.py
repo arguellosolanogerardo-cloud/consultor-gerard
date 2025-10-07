@@ -433,6 +433,69 @@ div[data-testid="stTextInput"] label {
   font-weight: bold;
   font-size: 1.1rem;
 }
+
+/* Estilos para párrafos más anchos y responsive */
+p {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  margin: 0 auto;
+}
+
+ul, ol {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding-left: 20px;
+}
+
+li {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  margin-bottom: 10px;
+}
+
+/* Contenedor principal más ancho */
+.stChatMessage {
+  max-width: 95% !important;
+  width: 95% !important;
+}
+
+/* Mensajes del chat */
+div[data-testid="stChatMessageContent"] {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Responsive para diferentes dispositivos */
+@media (min-width: 1200px) {
+  /* Desktop grande */
+  p, ul, ol {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 768px) {
+  /* Tablets */
+  p, ul, ol {
+    max-width: 100%;
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Móviles */
+  p, ul, ol {
+    max-width: 100%;
+    padding: 0 5px;
+    font-size: 0.95rem;
+  }
+  
+  li {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+}
 </style>
 
 <div class="title-gerard">GERARD</div>
@@ -486,9 +549,9 @@ div[data-testid="stTextInput"] label {
             # Cargar el GIF de pregunta
             pregunta_gif_base64 = load_gif_as_base64("assets/pregunta.gif")
             
-            # Formatear la pregunta con el GIF de pregunta
+            # Formatear la pregunta con el GIF de pregunta al inicio y símbolo animado al final
             if pregunta_gif_base64:
-                formatted_question = f'<img src="data:image/gif;base64,{pregunta_gif_base64}" width="30" height="30" style="display: inline-block; margin-right: 10px; animation: rotate 1.5s infinite;"><span class="question-text">{user_question}</span><img src="data:image/gif;base64,{pregunta_gif_base64}" width="30" height="30" style="display: inline-block; margin-left: 10px; animation: pulsateRed 1s infinite;">'
+                formatted_question = f'<img src="data:image/gif;base64,{pregunta_gif_base64}" width="30" height="30" style="display: inline-block; margin-right: 10px; animation: rotate 1.5s infinite;"><span class="question-text">{user_question}</span><span class="question-mark-end">❓</span>'
             else:
                 # Fallback a emojis si el GIF no se puede cargar
                 formatted_question = f'<span class="question-mark-start">❓</span><span class="question-text">{user_question}</span><span class="question-mark-end">❓</span>'
@@ -612,7 +675,7 @@ div[data-testid="stTextInput"] label {
                                 quote_text = clean_srt_content(doc.page_content)
                                 
                                 # Formatear con colores
-                                highlighted_quote = f'<span style="color: yellow;">{quote_text}</span>'
+                                highlighted_quote = f'<span style="color: #0066CC;">{quote_text}</span>'
                                 violet_source = f' <span style="color: violet;">{source_info}</span>'
                                 
                                 final_answer_html += f"<li>{highlighted_quote}{violet_source}</li>"
