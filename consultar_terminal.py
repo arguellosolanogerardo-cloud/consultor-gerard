@@ -239,7 +239,14 @@ def main():
                 logger.mark_phase(session_id, "processing_start")
 
                 print(Fore.GREEN + "\nRespuesta de GERARD:" + Style.RESET_ALL)
-                print(answer) # Imprime el resumen
+                
+                # Aplicar color violeta al texto dentro de paréntesis
+                formatted_answer = re.sub(
+                    r'\(([^)]+)\)',
+                    lambda m: f"{Fore.MAGENTA}({m.group(1)}){Style.RESET_ALL}",
+                    answer
+                )
+                print(formatted_answer) # Imprime el resumen con formato
 
                 # Mostrar las citas textuales directamente de los documentos fuente
                 if sources:
