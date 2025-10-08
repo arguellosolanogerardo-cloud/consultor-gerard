@@ -805,7 +805,7 @@ div[data-testid="stChatMessageContent"] {
             with st.chat_message("user"):
                 st.markdown(formatted_question, unsafe_allow_html=True)
 
-            with st.chat_message("assistant", avatar="assets/ufo.gif"):
+            with st.chat_message("assistant"):
                 # Mostrar animación de OVNI personalizada
                 gif_base64 = load_gif_as_base64("assets/ovni.gif")
                 if gif_base64:
@@ -909,7 +909,13 @@ div[data-testid="stChatMessageContent"] {
                         # Usar una expresión regular para encontrar todo lo que esté entre paréntesis
                         formatted_answer = re.sub(r'\(([^)]+)\)', replace_reference, answer)
 
-                        final_answer_html = f"<p>{formatted_answer}</p>"
+                        ufo_gif_base64 = load_gif_as_base64("assets/ufo.gif")
+                        final_answer_html = f"""
+                        <div style="text-align: center;">
+                            <img src="data:image/gif;base64,{ufo_gif_base64}" width="100">
+                        </div>
+                        <p>{formatted_answer}</p>
+                        """
                         
                         # Agregar sección de citas textuales
                         if sources:
