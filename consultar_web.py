@@ -769,23 +769,6 @@ else:
     <p class="sub-welcome-text">AHORA YA PUEDES REALIZAR TUS PREGUNTAS EN LA PARTE INFERIOR</p>
     """, unsafe_allow_html=True)
 
-# --- Botón de prueba: generar un PDF de ejemplo y ofrecer descarga inmediata ---
-if REPORTLAB_AVAILABLE:
-    try:
-        if st.button("Generar PDF de prueba (demo)"):
-            demo_user = st.session_state.get('user_name') or 'PRUEBA_USER'
-            demo_html = f'<strong style="color:#28a745;">{demo_user}:</strong> Este es un PDF de prueba con texto normal y una parte <span style="color:yellow; background-color:#333;">ENFATIZADA</span>. (Fuente: ejemplo.srt, Timestamp: 00:00:10 --> 00:00:12)'
-            demo_html += f"<br/><br/><span style=\"color:#28a745;\">Usuario: {demo_user}</span>"
-            try:
-                pdf_bytes = generate_pdf_from_html(demo_html, title_base=f"PDF demo - {demo_user}", user_name=demo_user)
-                demo_name = f"sample_QA_{demo_user}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                st.download_button(label="📄 Descargar PDF demo", data=pdf_bytes, file_name=demo_name, mime="application/pdf")
-            except Exception as e:
-                st.error(f"No se pudo generar el PDF de prueba: {e}")
-    except Exception:
-        # No queremos que la UI se rompa por este botón en entornos extraños
-        pass
-
 # --- Mostrar historial con avatares personalizados ---
 for message in st.session_state.messages:
     avatar = user_avatar if message["role"] == "user" else assistant_avatar
