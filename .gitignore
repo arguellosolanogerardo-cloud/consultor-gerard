@@ -29,9 +29,9 @@ chroma_db/
 chroma_db_backup_*/
 faiss_index_backup_*/
 
-# FAISS index artifacts (may be large)
-faiss_index/index.faiss
-faiss_index/index.pkl
+# FAISS index artifacts - NOTA: faiss_index/ YA NO está ignorado para que funcione en Streamlit Cloud
+# faiss_index/index.faiss
+# faiss_index/index.pkl
 
 # Backups and caches
 *_backup_*/
