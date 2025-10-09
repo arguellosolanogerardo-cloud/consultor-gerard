@@ -427,19 +427,24 @@ def generate_download_filename() -> str:
                 user_questions.append(match.group(1).strip())
 
     if not user_questions:
-        base_name = "conversacion"
+        questions_text = "conversacion"
     else:
         # Unir preguntas con un guion bajo para más claridad
-        base_name = "_".join(user_questions)
+        questions_text = "_".join(user_questions)
 
-    # Sanitizar y truncar
-    sanitized_name = re.sub(r'[\\/:*?"<>|]', '', base_name)
-    truncated_name = sanitized_name[:200].strip()
+    # Sanitizar y truncar a 230 caracteres
+    sanitized_name = re.sub(r'[\\/:*?"<>|]', '', questions_text)
+    truncated_questions = sanitized_name[:230].strip()
 
     user_name = st.session_state.get('user_name', 'usuario').upper()
     
-    # Formato final: PREGUNTAS_USUARIO.txt
-    return f"{truncated_name}_{user_name}.txt"
+    # Obtener fecha y hora actual
+    now = datetime.now()
+    date_str = now.strftime('%Y%m%d')
+    time_str = now.strftime('%H%M')  # Solo hora y minuto
+    
+    # Formato final: CONSULTA_DE_NOMBREUSUARIO_TITULOS_20251009_2109.txt
+    return f"CONSULTA_DE_{user_name}_{truncated_questions}_{date_str}_{time_str}.txt"
 
 
 def _escape_ampersand(text: str) -> str:
