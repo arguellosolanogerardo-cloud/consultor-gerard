@@ -138,8 +138,13 @@ def load_resources():
                 embeddings = FakeEmbeddings()
 
             faiss_vs = FAISS.load_local(folder_path="faiss_index", embeddings=embeddings, allow_dangerous_deserialization=True)
+            # Debug: verificar que se cargó correctamente
+            doc_count = faiss_vs.index.ntotal if hasattr(faiss_vs, 'index') else 'unknown'
+            print(f"[DEBUG load_resources] FAISS cargado exitosamente con {doc_count} documentos")
+            st.success(f"✅ Base vectorial cargada: {doc_count} documentos disponibles")
         except Exception as e:
-            st.error(f"No fue posible cargar el índice FAISS: {e}")
+            print(f"[ERROR load_resources] Error al cargar FAISS: {e}")
+            st.error(f"❌ No fue posible cargar el índice FAISS: {e}")
             st.stop()
 
     return llm, faiss_vs
@@ -826,10 +831,13 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
                     # Intentar cargar recursos reales; esto validará la API key y el índice
                     try:
                         llm_loaded, vs = load_resources()
+                        print(f"[DEBUG] load_resources completado - LLM: {type(llm_loaded)}, VS: {type(vs)}")
                     except Exception as e:
+                        print(f"[ERROR] load_resources falló: {e}")
                         response_placeholder.error(f"No fue posible inicializar los recursos: {e}")
                         raise
                     retriever = vs.as_retriever()
+                    print(f"[DEBUG] Retriever creado: {type(retriever)}")
 
                     # Si el LLM no se pudo inicializar, usamos un FakeChain que sólo regresa documentos
                     if llm_loaded is None:
