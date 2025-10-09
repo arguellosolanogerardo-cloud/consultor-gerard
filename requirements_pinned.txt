@@ -1,0 +1,43 @@
+# Requirements con versiones pinned para compatibilidad Google/protobuf
+# Resolver el error 'ProtoType' object has no attribute 'DESCRIPTOR'
+
+# Core protobuf y proto-plus (versiones compatibles)
+protobuf>=5.26.1,<6.0
+proto-plus>=1.24.0,<2.0
+
+# Google client libraries (versiones actuales que requieren protobuf 5.x)
+google-ai-generativelanguage>=0.6.0
+google-api-core>=2.20.0
+google-generativeai>=0.8.0
+google-auth>=2.23.0
+googleapis-common-protos>=1.60.0
+
+# LangChain Google integration
+langchain-google-genai>=1.0.0
+langchain-community>=0.2.0
+langchain>=0.2.0
+langchain-core>=0.2.0
+
+# Vector store
+faiss-cpu>=1.7.4
+
+# Web UI
+streamlit>=1.28.0
+
+# Utilities
+python-dotenv>=1.0.0
+colorama>=0.4.6
+requests>=2.31.0
+keyring>=24.0.0
+
+# PDF generation
+reportlab>=4.0.0
+
+# Data processing
+pydantic>=2.0.0
+typing-extensions>=4.8.0
+tqdm>=4.66.0
+
+# Network and gRPC (compatible versions)
+grpcio>=1.60.0
+grpcio-status>=1.60.0

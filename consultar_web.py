@@ -3,13 +3,14 @@ import os
 import json
 import re
 import colorama
+import keyring
 from dotenv import load_dotenv
-from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 from datetime import datetime
+import uuid
 from typing import Any, Iterable, List, Pattern
 import streamlit as st
 import requests  # Para obtener la IP y geolocalización
@@ -48,6 +49,15 @@ def load_resources():
     except Exception:
         # En entornos sin Streamlit secrets esto puede fallar; ignoramos
         pass
+    # 3) intentar keyring para leer la clave cifrada (servicio 'consultor-gerard')
+    if not api_key:
+        try:
+            kr = keyring.get_password('consultor-gerard', 'google_api_key')
+            if kr:
+                api_key = kr
+        except Exception:
+            # si keyring falla, seguimos el flujo normal y mostraremos el error abajo
+            pass
     if not api_key:
         st.error(
             "Error: La variable de entorno GOOGLE_API_KEY no está configurada. Añade la clave a las variables de entorno o a Streamlit Secrets."
@@ -55,21 +65,88 @@ def load_resources():
         st.stop()
 
     # Pasar la API key explícitamente evita que la librería intente usar ADC
-    with st.spinner('Inicializando LLM y embeddings...'):
-        llm = GoogleGenerativeAI(model="models/gemini-2.5-pro", google_api_key=api_key)
+    # Intentar inicializar el LLM y embeddings de forma perezosa; si falla, devolver llm=None
+    llm = None
+    embeddings = None
 
-    # Cargar índice FAISS persistido en 'faiss_index' con spinner
-    try:
-        with st.spinner('Cargando índice FAISS (esto puede tardar varios segundos)...'):
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key)
+    with st.spinner('Inicializando LLM y embeddings (de forma perezosa)...'):
+        # Importar las clases de Google solo cuando las necesitemos, y capturar errores
+        try:
+            from langchain_google_genai import GoogleGenerativeAI
+        except Exception as e:
+            GoogleGenerativeAI = None
+            st.warning(f"No se pudo importar GoogleGenerativeAI: {e}")
+
+        try:
+            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        except Exception as e:
+            GoogleGenerativeAIEmbeddings = None
+            st.warning(f"No se pudo importar GoogleGenerativeAIEmbeddings: {e}")
+
+        # Inicializar LLM si la clase está disponible
+        if GoogleGenerativeAI is not None:
+            try:
+                llm = GoogleGenerativeAI(model="models/gemini-2.5-pro", google_api_key=api_key)
+            except Exception as e:
+                st.warning(f"No se pudo inicializar el LLM (GoogleGenerativeAI): {e}. La aplicación usará un modo de recuperación local sin LLM.")
+
+        # Inicializar embeddings (o usar fallback) y cargar FAISS
+        try:
+            # Intentar usar la clase oficial si está disponible
+            if GoogleGenerativeAIEmbeddings is not None:
+                try:
+                    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key)
+                except Exception as e:
+                    st.warning(f"No fue posible inicializar GoogleEmbeddings: {e}. Usando embeddings de fallback (hash-based).")
+            else:
+                st.warning("GoogleGenerativeAIEmbeddings no disponible, usando embeddings de fallback (hash-based).")
+
+            if embeddings is None:
+                import hashlib
+                # Intentar deducir la dimensión del índice FAISS para generar vectores compatibles
+                target_dim = 768
+                try:
+                    import faiss
+                    idx_path = os.path.join('faiss_index', 'index.faiss')
+                    if os.path.exists(idx_path):
+                        idx = faiss.read_index(idx_path)
+                        target_dim = getattr(idx, 'd', target_dim)
+                except Exception:
+                    # Si faiss no está disponible o falla, seguimos con el valor por defecto
+                    pass
+
+                class FakeEmbeddings:
+                    def __init__(self, dim: int = target_dim):
+                        self.dim = dim
+
+                    def _text_to_vector(self, text: str) -> List[float]:
+                        out_bytes = b''
+                        counter = 0
+                        while len(out_bytes) < self.dim:
+                            h = hashlib.sha256((text + '|' + str(counter)).encode('utf-8')).digest()
+                            out_bytes += h
+                            counter += 1
+                        vec = [b / 255.0 for b in out_bytes[: self.dim]]
+                        return vec
+
+                    def embed_documents(self, texts: Iterable[str]) -> List[List[float]]:
+                        return [self._text_to_vector(t) for t in texts]
+
+                    def embed_query(self, text: str) -> List[float]:
+                        return self._text_to_vector(text)
+
+                embeddings = FakeEmbeddings()
+
             faiss_vs = FAISS.load_local(folder_path="faiss_index", embeddings=embeddings, allow_dangerous_deserialization=True)
-    except Exception as e:
-        st.error(f"No fue posible cargar el índice FAISS: {e}")
-        st.stop()
+        except Exception as e:
+            st.error(f"No fue posible cargar el índice FAISS: {e}")
+            st.stop()
 
     return llm, faiss_vs
 
-llm, vectorstore = load_resources()
+# NOTA: No ejecutar load_resources() al importar el módulo para evitar inicializar
+# las librerías de Google (protobuf/GRPC) en el arranque de Streamlit. La carga
+# se hará bajo demanda cuando el usuario envíe una consulta.
 
 # --- Lógica de GERARD (sin cambios) ---
 prompt = ChatPromptTemplate.from_template(r"""
@@ -170,6 +247,25 @@ SECCIÓN 4: METADATOS Y GARANTÍA DE CALIDAD
 ═══════════════════════════════════════════════════════════
 FIN DEL ANÁLISIS
 
+🚨 FORMATO DE SALIDA OBLIGATORIO (JSON)
+CRÍTICO: Tu respuesta DEBE ser un array JSON válido con esta estructura exacta:
+
+[
+  {{"type": "normal", "content": "Texto de la sección 1..."}},
+  {{"type": "emphasis", "content": "(Fuente: archivo.srt, Timestamp: HH:MM:SS --> HH:MM:SS)"}},
+  {{"type": "normal", "content": "Texto de la sección 2..."}}
+]
+
+REGLAS:
+- type: puede ser "normal" o "emphasis"
+- content: string con el contenido (incluye las citas de fuente DENTRO del content)
+- NO agregues texto fuera del array JSON
+- NO uses markdown, solo el array JSON puro
+- Las citas de fuente deben ir en type "emphasis" o dentro del content con formato: (Fuente: X, Timestamp: Y)
+
+Contexto disponible:
+{context}
+
 Basándote estrictamente en el contenido disponible en el contexto (no accedas a fuentes externas), responde la consulta del usuario respetando todas las prohibiciones y mandatos arriba definidos.
 """)
 
@@ -202,14 +298,10 @@ def format_docs_with_metadata(docs: Iterable[Any]) -> str:
             formatted_strings.append(f"Fuente: {source_filename}\nContenido:\n{cleaned_content}")
     return "\n\n---\n\n".join(formatted_strings)
 
-llm, vectorstore = load_resources()
-retriever = vectorstore.as_retriever()
-retrieval_chain = (
-    {"context": retriever | format_docs_with_metadata, "input": RunnablePassthrough()}
-    | prompt
-    | llm
-    | StrOutputParser()
-)
+# Nota: la carga de llm y vectorstore se hace bajo demanda más abajo.
+llm = None
+vectorstore = None
+retrieval_chain = None
 
 # --- Funciones de Geolocalización y Registro ---
 @st.cache_data
@@ -226,13 +318,22 @@ def get_user_location() -> str:
 
 def get_clean_text_from_json(json_string: str) -> str:
     try:
+        # Debug: mostrar tipo recibido
+        print(f"[DEBUG get_clean_text_from_json] Tipo recibido: {type(json_string)}")
+        
+        # Convertir a string si recibimos un dict o list
+        if isinstance(json_string, (dict, list)):
+            print(f"[DEBUG] Convirtiendo {type(json_string)} a JSON string")
+            json_string = json.dumps(json_string, ensure_ascii=False)
+        
         match = re.search(r'\[.*\]', json_string, re.DOTALL)
         if not match:
             return json_string
 
         data = json.loads(match.group(0))
         return "".join([item.get("content", "") for item in data])
-    except Exception:
+    except Exception as ex:
+        print(f"[DEBUG get_clean_text_from_json] ERROR: {ex}")
         return json_string
 
 
@@ -268,6 +369,14 @@ def detect_gender_from_name(name: str) -> str:
     return 'No especificar'
 
 def save_to_log(user: str, question: str, answer_json: str, location: str) -> None:
+    # Debug: mostrar tipo recibido
+    print(f"[DEBUG save_to_log] Tipo de answer_json recibido: {type(answer_json)}")
+    
+    # Convertir answer_json a string si es dict/list
+    if isinstance(answer_json, (dict, list)):
+        print(f"[DEBUG save_to_log] Convirtiendo {type(answer_json)} a JSON string")
+        answer_json = json.dumps(answer_json, ensure_ascii=False)
+    
     clean_answer = get_clean_text_from_json(answer_json)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open("gerard_log.txt", "a", encoding="utf-8") as f:
@@ -757,7 +866,77 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
             response_placeholder.markdown(loader_html, unsafe_allow_html=True)
 
             try:
-                answer_json = retrieval_chain.invoke(prompt_input)
+                # Construir retrieval_chain a demanda si no existe
+                if retrieval_chain is None:
+                    # Intentar cargar recursos reales; esto validará la API key y el índice
+                    try:
+                        llm_loaded, vs = load_resources()
+                    except Exception as e:
+                        response_placeholder.error(f"No fue posible inicializar los recursos: {e}")
+                        raise
+                    retriever = vs.as_retriever()
+
+                    # Si el LLM no se pudo inicializar, usamos un FakeChain que sólo regresa documentos
+                    if llm_loaded is None:
+                        class FakeChain:
+                            def __init__(self, retriever):
+                                self.retriever = retriever
+
+                            def invoke(self, payload):
+                                query = payload if isinstance(payload, str) else payload.get('input', '')
+                                # obtener documentos relevantes (compatibilidad con diferentes retrievers)
+                                try:
+                                    docs = self.retriever.get_relevant_documents(query)
+                                except Exception:
+                                    docs = self.retriever(query)
+
+                                items = []
+                                for d in list(docs)[:3]:
+                                    src = os.path.basename(d.metadata.get('source', 'desconocido'))
+                                    snippet = re.sub(r'\s+', ' ', d.page_content)[:300]
+                                    items.append({"type": "normal", "content": f"Fuente: {src} - {snippet}"})
+                                if not items:
+                                    items = [{"type": "normal", "content": "No se encontraron documentos relevantes en el índice."}]
+                                return json.dumps(items, ensure_ascii=False)
+
+                        retrieval_chain = FakeChain(retriever)
+                    else:
+                        # Reconstruir retrieval_chain con los recursos cargados
+                        retrieval_chain = (
+                            {
+                                "context": lambda x: format_docs_with_metadata(retriever.get_relevant_documents(x["input"])),
+                                "input": lambda x: x["input"],
+                                "date": lambda x: x.get("date", ""),
+                                "session_hash": lambda x: x.get("session_hash", "")
+                            }
+                            | prompt
+                            | llm_loaded
+                            | StrOutputParser()
+                        )
+
+                # Preparar variables requeridas por el prompt (date y session_hash)
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                session_hash = str(uuid.uuid4())
+                payload = {"input": prompt_input, "date": ts, "session_hash": session_hash}
+                
+                print(f"[DEBUG] Antes de invoke - retrieval_chain type: {type(retrieval_chain)}")
+                answer_raw = retrieval_chain.invoke(payload)
+                print(f"[DEBUG] Después de invoke - answer_raw type: {type(answer_raw)}, valor: {str(answer_raw)[:200]}")
+                
+                # Asegurar que answer_json sea siempre un string JSON
+                if isinstance(answer_raw, dict):
+                    print(f"[DEBUG] answer_raw es dict, convirtiendo a JSON string")
+                    answer_json = json.dumps(answer_raw, ensure_ascii=False)
+                else:
+                    answer_json = answer_raw if isinstance(answer_raw, str) else str(answer_raw)
+                
+                print(f"[DEBUG] answer_json type final: {type(answer_json)}")
+                
+                # Debug: verificar tipo antes de save_to_log
+                if not isinstance(answer_json, str):
+                    st.error(f"❌ DEBUG: answer_json es tipo {type(answer_json)}, convirtiendo a string...")
+                    answer_json = json.dumps(answer_json, ensure_ascii=False) if isinstance(answer_json, (dict, list)) else str(answer_json)
+                
                 save_to_log(st.session_state.user_name, prompt_input, answer_json, location)
                 
                 match = re.search(r'\[.*\]', answer_json, re.DOTALL)
