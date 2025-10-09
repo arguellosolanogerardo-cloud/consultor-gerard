@@ -904,7 +904,7 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
                         # Reconstruir retrieval_chain con los recursos cargados
                         retrieval_chain = (
                             {
-                                "context": lambda x: format_docs_with_metadata(retriever.get_relevant_documents(x["input"])),
+                                "context": (lambda x: x["input"]) | retriever | format_docs_with_metadata,
                                 "input": lambda x: x["input"],
                                 "date": lambda x: x.get("date", ""),
                                 "session_hash": lambda x: x.get("session_hash", "")
