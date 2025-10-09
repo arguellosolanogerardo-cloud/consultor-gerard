@@ -141,7 +141,11 @@ def load_resources():
             # Debug: verificar que se cargó correctamente
             doc_count = faiss_vs.index.ntotal if hasattr(faiss_vs, 'index') else 'unknown'
             print(f"[DEBUG load_resources] FAISS cargado exitosamente con {doc_count} documentos")
-            st.success(f"✅ Base vectorial cargada: {doc_count} documentos disponibles")
+            # Mostrar mensaje con estilo tenue y sin fondo
+            st.markdown(
+                f'<p style="color: rgba(128, 128, 128, 0.5); font-size: 0.85em; margin: 5px 0;">✅ Base vectorial cargada: {doc_count} BLOQUES CHUNKS disponibles</p>',
+                unsafe_allow_html=True
+            )
         except Exception as e:
             print(f"[ERROR load_resources] Error al cargar FAISS: {e}")
             st.error(f"❌ No fue posible cargar el índice FAISS: {e}")
