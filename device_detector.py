@@ -14,7 +14,6 @@ Características:
 
 import platform
 import os
-import sys
 import shutil
 from typing import Dict, Optional
 import re

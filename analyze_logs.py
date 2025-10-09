@@ -73,7 +73,7 @@ class LogAnalyzer:
         successful = sum(1 for d in data if d.get("status") == "success")
         failed = total - successful
         
-        print(f"📈 ESTADÍSTICAS GENERALES")
+        print("📈 ESTADÍSTICAS GENERALES")
         print(f"{'-'*70}")
         print(f"Total de interacciones: {total}")
         print(f"  ✅ Exitosas: {successful} ({successful/total*100:.1f}%)")
@@ -97,7 +97,7 @@ class LogAnalyzer:
         p95 = sorted_times[int(len(sorted_times) * 0.95)]
         p99 = sorted_times[int(len(sorted_times) * 0.99)]
         
-        print(f"⚡ MÉTRICAS DE RENDIMIENTO")
+        print("⚡ MÉTRICAS DE RENDIMIENTO")
         print(f"{'-'*70}")
         print(f"Tiempo promedio de respuesta: {avg_time:.3f}s")
         print(f"Tiempo mínimo: {min_time:.3f}s")
@@ -118,7 +118,7 @@ class LogAnalyzer:
         """Imprime estadísticas por usuario."""
         users = Counter([d.get("user", "Desconocido") for d in data])
         
-        print(f"👥 USUARIOS MÁS ACTIVOS")
+        print("👥 USUARIOS MÁS ACTIVOS")
         print(f"{'-'*70}")
         for i, (user, count) in enumerate(users.most_common(10), 1):
             percentage = count / len(data) * 100
@@ -137,7 +137,7 @@ class LogAnalyzer:
             for d in data
         ])
         
-        print(f"🌍 DISTRIBUCIÓN GEOGRÁFICA")
+        print("🌍 DISTRIBUCIÓN GEOGRÁFICA")
         print(f"{'-'*70}")
         print("Por país:")
         for i, (country, count) in enumerate(countries.most_common(5), 1):
@@ -163,7 +163,7 @@ class LogAnalyzer:
             if d.get("platform") == "web"
         ])
         
-        print(f"💻 DISPOSITIVOS Y PLATAFORMAS")
+        print("💻 DISPOSITIVOS Y PLATAFORMAS")
         print(f"{'-'*70}")
         print("Por plataforma:")
         for platform, count in platforms.most_common():
@@ -207,7 +207,7 @@ class LogAnalyzer:
         errors = [d for d in data if d.get("status") == "error"]
         
         if not errors:
-            print(f"✅ NO SE REGISTRARON ERRORES")
+            print("✅ NO SE REGISTRARON ERRORES")
             print(f"{'-'*70}\n")
             return
         
@@ -231,7 +231,7 @@ class LogAnalyzer:
             print("❌ No se encontraron archivos de log")
             return
         
-        print(f"\n📅 FECHAS DISPONIBLES:")
+        print("\n📅 FECHAS DISPONIBLES:")
         print(f"{'-'*70}")
         
         dates_info = []

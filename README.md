@@ -1,17 +1,17 @@
 # GERARD — asistente de búsqueda sobre archivos SRT
 
-Pequeña app que indexa archivos `.srt` en ChromaDB y expone dos frontends:
+Pequeña app que indexa archivos `.srt` en FAISS y expone dos frontends:
 
 - `consultar_terminal.py`: CLI interactiva.
 - `consultar_web.py`: UI en Streamlit (archivo principal para deploy).
 
 ## Contenido del repositorio
 
-- `ingestar.py` — carga `.srt` desde `documentos_srt/`, los divide en trozos y crea `./chroma_db`.
+- `ingestar.py` — carga `.srt` desde `documentos_srt/`, los divide en trozos y crea `./faiss_index`.
 - `consultar_terminal.py` — cliente CLI que pregunta a GERARD y muestra salida JSON coloreada.
 - `consultar_web.py` — interfaz Streamlit; espera la variable `GOOGLE_API_KEY` y usa `st.secrets` en despliegue.
 - `documentos_srt/` — carpeta con los archivos SRT (datos). No recomendable subir si contienen material privado.
-- `chroma_db/` — base vectorial persistida (NO se recomienda subir al repo).
+- `faiss_index/` — base vectorial persistida (NO se recomienda subir al repo).
 - `.env.sample`, `.streamlit/secrets.toml`, `.github/copilot-instructions.md`, `.gitignore` y `requirements.txt`.
 
 ## Requisitos
