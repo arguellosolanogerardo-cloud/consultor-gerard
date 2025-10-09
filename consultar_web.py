@@ -96,6 +96,7 @@ def load_resources():
             if GoogleGenerativeAIEmbeddings is not None:
                 try:
                     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key)
+                    print("[DEBUG] Embeddings de Google inicializadas correctamente")
                 except Exception as e:
                     st.warning(f"No fue posible inicializar GoogleEmbeddings: {e}. Usando embeddings de fallback (hash-based).")
             else:
@@ -136,6 +137,7 @@ def load_resources():
                         return self._text_to_vector(text)
 
                 embeddings = FakeEmbeddings()
+                st.error("⚠️ ADVERTENCIA: Usando embeddings simuladas (hash-based). La búsqueda semántica será limitada. Verifica la API key de Google.")
 
             faiss_vs = FAISS.load_local(folder_path="faiss_index", embeddings=embeddings, allow_dangerous_deserialization=True)
             # Debug: verificar que se cargó correctamente
