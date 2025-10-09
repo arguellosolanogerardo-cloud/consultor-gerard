@@ -282,12 +282,16 @@ cleaning_pattern = get_cleaning_pattern()
 
 def format_docs_with_metadata(docs: Iterable[Any]) -> str:
     """Formatea una secuencia de documentos recuperados y limpia su contenido.
-
+    
     docs: iterable de objetos con atributos `metadata` (dict) y `page_content` (str).
     Devuelve una única cadena con todos los documentos formateados.
     """
+    # DEBUG: Convertir a lista para ver cuántos docs hay
+    docs_list = list(docs)
+    print(f"[DEBUG format_docs_with_metadata] Recibidos {len(docs_list)} documentos")
+    
     formatted_strings: List[str] = []
-    for doc in docs:
+    for doc in docs_list:
         source_filename = os.path.basename(doc.metadata.get('source', 'Desconocido'))
         texts_to_remove_from_filename = ["[Spanish (auto-generated)]", "[DownSub.com]"]
         for text_to_remove in texts_to_remove_from_filename:
@@ -298,7 +302,10 @@ def format_docs_with_metadata(docs: Iterable[Any]) -> str:
         cleaned_content = "\n".join(line for line in cleaned_content.split('\n') if line.strip())
         if cleaned_content:
             formatted_strings.append(f"Fuente: {source_filename}\nContenido:\n{cleaned_content}")
-    return "\n\n---\n\n".join(formatted_strings)
+    
+    result = "\n\n---\n\n".join(formatted_strings)
+    print(f"[DEBUG format_docs_with_metadata] Devolviendo {len(result)} caracteres de contexto")
+    return result
 
 # Nota: la carga de llm y vectorstore se hace bajo demanda más abajo.
 llm = None
