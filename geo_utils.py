@@ -197,7 +197,6 @@ class GeoLocator:
                 data = response.json()
                 
                 # Separar ciudad y región
-                location_parts = data.get("loc", ",").split(",")
                 city = data.get("city", "Desconocido")
                 region = data.get("region", "Desconocido")
                 

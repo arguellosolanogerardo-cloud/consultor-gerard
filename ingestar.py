@@ -1,24 +1,25 @@
 """
 Este script se encarga de procesar documentos de texto (en formato .srt),
-dividirlos en fragmentos (chunks) y crear una base de datos vectorial utilizando FAISS.
+dividirlos en fragmentos (chunks) y crear una base de datos vectorial utilizando ChromaDB.
 Los embeddings se generan utilizando la API de Google Generative AI.
 
 Funcionalidades:
 - Carga de variables de entorno para la clave de API de Google.
 - Lee todos los archivos .srt de un directorio especificado.
 - Divide el texto de los documentos en fragmentos más pequeños para su procesamiento.
-- Genera embeddings para cada fragmento de texto y los almacena en un índice FAISS.
-- Guarda el índice FAISS en el disco para su uso posterior.
+- Genera embeddings para cada fragmento de texto y los almacena en una base de datos ChromaDB.
+- Guarda la base de datos en el disco para su uso posterior.
 - Maneja los límites de tasa de la API introduciendo pausas entre solicitudes.
 
 Uso:
 - Asegúrate de tener un archivo .env con tu GOOGLE_API_KEY.
 - Ejecuta el script con `python ingestar.py`.
-- El script creará un directorio 'faiss_index' con la base de datos vectorial.
+- Para forzar la recreación de la base de datos, usa `python ingestar.py --force`.
 """
 
 import os
-import time
+import shutil
+import argparse
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -26,7 +27,7 @@ from langchain_community.document_loaders import TextLoader
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-# Cargar variables de entorno. Langchain usará GOOGLE_API_KEY automáticamente.
+# Cargar variables de entorno
 load_dotenv()
 
 # Verificar que la API Key existe
@@ -34,7 +35,7 @@ if not os.getenv("GOOGLE_API_KEY"):
     print("No se encontró la clave de API para Google. Por favor, configura la variable de entorno GOOGLE_API_KEY.")
     exit()
 
-# Ruta al directorio con los documentos .srt
+# Rutas
 DATA_PATH = "documentos_srt/"
 FAISS_INDEX_PATH = "faiss_index"
 
@@ -45,7 +46,6 @@ def get_srt_text(data_path):
     doc_counter = 0
     documents_list = []
     print("Leyendo archivos .srt...")
-    # Usar tqdm para mostrar el progreso de la carga de archivos
     for filename in tqdm(os.listdir(data_path)):
         if filename.endswith(".srt"):
             file_path = os.path.join(data_path, filename)
@@ -68,45 +68,43 @@ def get_text_chunks(docs):
     print(f"Documentos divididos en {len(chunks)} trozos.")
     return chunks
 
-def get_vector_store(text_chunks):
+def create_vector_store(text_chunks):
     """
-    Crea y guarda la base de datos vectorial FAISS procesando un chunk a la vez.
-    Este método es lento pero seguro para evitar exceder los límites de la API.
+    Crea y guarda la base de datos vectorial FAISS procesando los chunks.
     """
     try:
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-        
-        print("Creando base de datos vectorial (modo lento y seguro).")
-        print("Este proceso puede tardar varias horas. Por favor, ten paciencia.")
-        
-        # Inicializar FAISS con el primer chunk para tener una base
-        print("Procesando el primer trozo...")
-        vector_store = FAISS.from_documents([text_chunks[0]], embeddings)
-        
-        # Pausa para asegurar que no empezamos con ráfagas de solicitudes
-        time.sleep(1.2)
-
-        # Iterar sobre el resto de los chunks, uno por uno, con una barra de progreso
-        print("Procesando el resto de los trozos...")
-        for chunk in tqdm(text_chunks[1:]):
-            vector_store.add_documents([chunk])
-            # Pausa de 1.2 segundos para estar por debajo del límite de 60 solicitudes/minuto
-            time.sleep(1.2) 
-
-        vector_store.save_local(FAISS_INDEX_PATH)
-        print(f"¡Éxito! Base de datos vectorial creada y guardada en '{FAISS_INDEX_PATH}'.")
-
+        print(f"Creando índice FAISS a partir de {len(text_chunks)} chunks. Esto puede tardar...")
+        vs = FAISS.from_documents(text_chunks, embeddings)
+        if os.path.exists(FAISS_INDEX_PATH):
+            shutil.rmtree(FAISS_INDEX_PATH)
+        vs.save_local(FAISS_INDEX_PATH)
+        print(f"¡Éxito! Índice FAISS creado y guardado en '{FAISS_INDEX_PATH}'.")
     except Exception as e:
-        print(f"Ocurrió un error durante la creación de la base de datos: {e}")
+        print(f"Ocurrió un error durante la creación del índice FAISS: {e}")
 
 def main():
     """
     Función principal que orquesta la carga y procesamiento de documentos.
     """
-    # Si el índice ya existe, no hacemos nada.
+    parser = argparse.ArgumentParser(description="Procesa documentos .srt y crea una base de datos vectorial ChromaDB.")
+    parser.add_argument("--force", action="store_true", help="Fuerza la eliminación de la base de datos existente sin pedir confirmación.")
+    args = parser.parse_args()
+
     if os.path.exists(FAISS_INDEX_PATH):
-        print("La base de datos vectorial ya existe. No se necesita hacer nada.")
-        return
+        if args.force:
+            print("Opción --force detectada. Borrando índice FAISS existente...")
+            shutil.rmtree(FAISS_INDEX_PATH)
+            print("Índice borrado.")
+        else:
+            respuesta = input(f"El índice en '{FAISS_INDEX_PATH}' ya existe. ¿Deseas borrarlo y volver a creararlo? (s/n): ").lower()
+            if respuesta == 's':
+                print("Borrando índice existente...")
+                shutil.rmtree(FAISS_INDEX_PATH)
+                print("Índice borrado.")
+            else:
+                print("Proceso cancelado. No se han realizado cambios.")
+                return
 
     print("Iniciando el proceso de ingesta de documentos...")
     raw_docs = get_srt_text(DATA_PATH)
@@ -114,7 +112,7 @@ def main():
     if raw_docs:
         print("Dividiendo documentos en trozos...")
         text_chunks = get_text_chunks(raw_docs)
-        get_vector_store(text_chunks)
+        create_vector_store(text_chunks)
 
 if __name__ == "__main__":
     main()
