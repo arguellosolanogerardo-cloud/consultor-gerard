@@ -1,3 +1,44 @@
+# Byte-compiled / cached
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files
+.env
+.env.*
+.streamlit/secrets.toml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+*.swp
+
+# Data and large artifacts
+documentos_srt/**/*.srt
+documentos_srt/*.srt
+chroma_db/
+chroma_db_backup_*/
+faiss_index_backup_*/
+
+# FAISS index artifacts (may be large)
+faiss_index/index.faiss
+faiss_index/index.pkl
+
+# Backups and caches
+*_backup_*/
+faiss_index_backup*/
+
+# SQLite databases
+*.sqlite3
 # Ignorar secretos y entornos virtuales
 .streamlit/secrets.toml
 venv/
