@@ -7,6 +7,8 @@ import threading
 import itertools
 import sys
 import time
+import getpass
+import uuid
 from dotenv import load_dotenv
 import keyring
 from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
@@ -312,49 +314,46 @@ def print_json_answer(json_string):
 def main():
     """Función principal que lanza el loop interactivo. Protegida para que no se ejecute al importar."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fast", action="store_true", help="Modo rápido: evita cargar FAISS/LLM y usa una respuesta simulada")
+    parser.add_argument("--no-store", action="store_true", help="No almacenar la API key en keyring aunque se provea interactiva")
     args = parser.parse_args()
 
     load_dotenv()
 
-    # Fast mode: no inicializar LLM/FAISS (útil para pruebas rápidas)
-    if args.fast:
-        class DummyChain:
-            def invoke(self, payload):
-                # Respuesta de ejemplo más fiel al formato GERARD v3.01
-                q = payload.get('input', '')
-                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                session_hash = f"demo-{ts.replace(' ', 'T')}"
-                # Ejemplo de fuente y timestamp que imita la estructura real
-                fuente = "ejemplo.srt"
-                timestamp_span = "00:01:23 --> 00:01:26"
+    # Intentar obtener la key desde keyring o entornos
+    api_key = get_api_key()
+    if not api_key:
+        # Pedir interactivamente la clave al usuario
+        print("No se encontró GOOGLE_API_KEY en keyring/entorno. Puedes pegar tu clave ahora (se ocultará).")
+        try:
+            entered = getpass.getpass(prompt="Introduce tu GOOGLE_API_KEY (vacío para cancelar): ")
+        except Exception:
+            entered = input("Introduce tu GOOGLE_API_KEY (vacío para cancelar): ")
 
-                response = [
-                    {
-                        "type": "normal",
-                        "content": f"🔬 ANÁLISIS\nTimestamp de Análisis: [{ts}]\nConsulta Procesada: \"{q}\"\nSECCIÓN 1: SÍNTESIS INVESTIGATIVA\nResumen: En modo demo se simula la detección de coincidencias textuales entre subtítulos."
-                    },
-                    {
-                        "type": "emphasis",
-                        "content": f"(Fuente: {fuente}, Timestamp: {timestamp_span})"
-                    },
-                    {
-                        "type": "normal",
-                        "content": f"SECCIÓN 2: EVIDENCIA FORENSE ESTRUCTURADA\n- Texto literal: \"simulación de texto coincidente\" (Fuente: {fuente}, Timestamp: {timestamp_span})\nSECCIÓN 4: METADATOS Y GARANTÍA DE CALIDAD\n- Checks ejecutados: [CHECK #1: OK, CHECK #2: OK]\nNivel de confianza: 0.65\nHash de Sesión: [{session_hash}]"
-                    }
-                ]
-
-                return json.dumps(response, ensure_ascii=False)
-
-        retrieval_chain = DummyChain()
-    else:
-        # Intentar obtener la key desde keyring o entornos
-        api_key = get_api_key()
-        if not api_key:
-            print("Error: No se encontró la API key. Guarda la clave en el keyring (scripts/store_key_keyring.py), en la variable de entorno GOOGLE_API_KEY, o en .env")
+        if not entered:
+            print("No se proporcionó clave. Abortando.")
             return
 
+        api_key = entered.strip()
+        # Ofrecer guardar en keyring
+        if not args.no_store:
+            try:
+                save_choice = input("¿Deseas guardar esta clave en el keyring del sistema para futuras ejecuciones? [y/N]: ")
+                if save_choice.lower().startswith('y'):
+                    try:
+                        keyring.set_password('consultor-gerard', 'google_api_key', api_key)
+                        print("Clave guardada en keyring con servicio 'consultor-gerard'.")
+                    except Exception as e:
+                        print(f"No se pudo guardar en keyring: {e}")
+            except Exception:
+                # No crítico si falla la interacción para guardar
+                pass
+
+    # Construir la cadena de recuperación real
+    try:
         retrieval_chain = build_retrieval_chain(api_key)
+    except Exception as e:
+        print(f"Error inicializando el pipeline real: {e}")
+        return
 
     print("GERARD listo. Escribe tu pregunta o 'salir' para terminar.")
     user_name = input("Por favor, introduce tu nombre para comenzar: ")
@@ -368,7 +367,9 @@ def main():
 
         print("Buscando...")
         try:
-            answer = retrieval_chain.invoke({"input": pregunta})
+            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            session_hash = str(uuid.uuid4())
+            answer = retrieval_chain.invoke({"input": pregunta, "date": ts, "session_hash": session_hash})
             print("\nRespuesta de GERARD:")
             print_json_answer(answer)
             save_to_log(pregunta, user_name.upper(), answer)
