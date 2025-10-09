@@ -266,7 +266,9 @@ REGLAS:
 Contexto disponible:
 {context}
 
-Basándote estrictamente en el contenido disponible en el contexto (no accedas a fuentes externas), responde la consulta del usuario respetando todas las prohibiciones y mandatos arriba definidos.
+Consulta del usuario: {input}
+
+Basándote estrictamente en el contenido disponible arriba, responde la consulta en formato JSON.
 """)
 
 def get_cleaning_pattern() -> Pattern:
