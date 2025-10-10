@@ -743,18 +743,21 @@ else:
     <p class="sub-welcome-text">AHORA YA PUEDES REALIZAR TUS PREGUNTAS EN LA PARTE INFERIOR</p>
     """, unsafe_allow_html=True)
 
-# --- Botones de Exportación (visibles cuando hay conversación) ---
+# --- Mostrar historial con avatares personalizados ---
+for message in st.session_state.messages:
+    avatar = user_avatar if message["role"] == "user" else assistant_avatar
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"], unsafe_allow_html=True)
+
+# --- Botones de Exportación (DESPUÉS del historial) ---
 if st.session_state.messages:
     st.markdown("---")
     st.markdown("### 📥 Exportar Conversación")
     
-    # Debug: mostrar cuántos mensajes hay
-    st.caption(f"DEBUG: {len(st.session_state.messages)} mensajes en el historial")
-    
     conversation_text = get_conversation_text()
     file_name = generate_download_filename()
     
-    # Mostrar en dos columnas para mejor visualización
+    # Mostrar en dos columnas
     col1, col2 = st.columns([1, 1])
     
     with col1:
@@ -763,7 +766,7 @@ if st.session_state.messages:
             data=conversation_text,
             file_name=file_name,
             mime="text/plain",
-            key="download_txt_top",
+            key="download_txt_bottom",
             use_container_width=True
         )
     
@@ -798,27 +801,15 @@ if st.session_state.messages:
                     data=pdf_bytes,
                     file_name=pdf_filename,
                     mime="application/pdf",
-                    key="download_pdf_top",
+                    key="download_pdf_bottom",
                     use_container_width=True
                 )
             except Exception as e:
                 st.error(f"Error generando PDF: {e}")
-                import traceback
-                st.code(traceback.format_exc())
         else:
-            st.warning("⚠️ ReportLab no está disponible. Instala con: pip install reportlab")
+            st.warning("⚠️ ReportLab no disponible")
     
-    st.markdown("---")  # Separador visual
-else:
-    # Mensaje informativo cuando no hay conversación
-    st.info("💡 Los botones de exportación aparecerán aquí después de tu primera pregunta")
-    st.caption(f"DEBUG: st.session_state.messages está vacío o es None: {st.session_state.messages}")
-
-# --- Mostrar historial con avatares personalizados ---
-for message in st.session_state.messages:
-    avatar = user_avatar if message["role"] == "user" else assistant_avatar
-    with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"], unsafe_allow_html=True)
+    st.markdown("---")
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
