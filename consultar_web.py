@@ -809,6 +809,11 @@ if st.session_state.messages:
     
     st.markdown("---")
 
+# --- Mostrar GIF de pregunta justo antes del input ---
+col_center = st.columns([1, 2, 1])
+with col_center[1]:
+    st.image("assets/pregunta.gif", use_container_width=True)
+
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
     if not st.session_state.user_name:
