@@ -810,11 +810,12 @@ if st.session_state.messages:
     st.markdown("---")
 
 # --- Mostrar GIF de pregunta casi pegado al input ---
-st.markdown("""
-<div style="text-align: center; margin-top: 10px; margin-bottom: 5px;">
-    <img src="assets/pregunta.gif?v=2" alt="Pregunta" style="width: 130px; height: auto;">
-</div>
-""", unsafe_allow_html=True)
+# Usar columnas para centrar y reducir espaciado
+st.markdown('<div style="margin-bottom: 5px;"></div>', unsafe_allow_html=True)
+col1, col2, col3 = st.columns([1.5, 1, 1.5])
+with col2:
+    st.image("assets/pregunta.gif", width=130)
+st.markdown('<div style="margin-top: -10px;"></div>', unsafe_allow_html=True)
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
