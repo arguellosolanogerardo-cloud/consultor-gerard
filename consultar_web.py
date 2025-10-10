@@ -937,26 +937,6 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
                     user_text = prompt_input.strip()
                     assistant_text = html_to_text(response_html)
                     single_qa_text = f"Pregunta: {user_text}\n\nRespuesta:\n{assistant_text}\n"
-
-                    # Botón de descarga PDF que preserva colores (HTML -> PDF)
-                    if REPORTLAB_AVAILABLE:
-                        try:
-                            # Anexar nombre del usuario al final del HTML para que aparezca en el PDF
-                            user_name_for_file = st.session_state.get('user_name','usuario')
-                            html_for_pdf = response_html + f"<br/><br/><span style=\"color:#28a745;\">Usuario: {user_name_for_file}</span>"
-                            pdf_bytes = generate_pdf_from_html(html_for_pdf, title_base=f"Q&A - {user_name_for_file}", user_name=user_name_for_file)
-                            pdf_name = f"QA_{user_name_for_file[:30]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                            st.download_button(
-                                label="📄 Guardar Q/A (PDF)",
-                                data=pdf_bytes,
-                                file_name=pdf_name,
-                                mime="application/pdf",
-                                key=f"download_last_pdf_{len(st.session_state.messages)}"
-                            )
-                        except Exception as e:
-                            st.error(f"Error generando PDF del intercambio: {e}")
-                    else:
-                        st.caption("Instala reportlab (`pip install reportlab`) para habilitar exportar Q/A en PDF.")
                 except Exception:
                     # No queremos que una falla aquí rompa la experiencia principal
                     pass
