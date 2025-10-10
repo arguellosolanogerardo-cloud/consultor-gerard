@@ -70,18 +70,45 @@ def get_text_chunks(docs):
 
 def create_vector_store(text_chunks):
     """
-    Crea y guarda la base de datos vectorial FAISS procesando los chunks.
+    Crea y guarda la base de datos vectorial FAISS procesando los chunks en lotes.
     """
+    import time
     try:
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-        print(f"Creando índice FAISS a partir de {len(text_chunks)} chunks. Esto puede tardar...")
-        vs = FAISS.from_documents(text_chunks, embeddings)
+        print(f"Creando índice FAISS a partir de {len(text_chunks)} chunks.")
+        
+        # Procesar en lotes de 100 para evitar timeouts
+        batch_size = 100
+        total_batches = (len(text_chunks) + batch_size - 1) // batch_size
+        
+        vs = None
+        for i in range(0, len(text_chunks), batch_size):
+            batch = text_chunks[i:i+batch_size]
+            batch_num = i // batch_size + 1
+            print(f"Procesando lote {batch_num}/{total_batches} ({len(batch)} chunks)...")
+            
+            if vs is None:
+                # Primer lote: crear el índice
+                vs = FAISS.from_documents(batch, embeddings)
+            else:
+                # Lotes siguientes: agregar al índice existente
+                vs_batch = FAISS.from_documents(batch, embeddings)
+                vs.merge_from(vs_batch)
+            
+            # Pausa entre lotes para evitar rate limits
+            if i + batch_size < len(text_chunks):
+                print(f"Pausa de 2 segundos antes del siguiente lote...")
+                time.sleep(2)
+        
+        # Guardar el índice completo
         if os.path.exists(FAISS_INDEX_PATH):
             shutil.rmtree(FAISS_INDEX_PATH)
         vs.save_local(FAISS_INDEX_PATH)
-        print(f"¡Éxito! Índice FAISS creado y guardado en '{FAISS_INDEX_PATH}'.")
+        print(f"¡Éxito! Índice FAISS creado con {len(text_chunks)} chunks y guardado en '{FAISS_INDEX_PATH}'.")
     except Exception as e:
         print(f"Ocurrió un error durante la creación del índice FAISS: {e}")
+        import traceback
+        traceback.print_exc()
 
 def main():
     """
