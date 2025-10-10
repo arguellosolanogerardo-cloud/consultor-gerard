@@ -89,9 +89,9 @@ def load_resources():
                 llm = GoogleGenerativeAI(
                     model="models/gemini-2.5-pro", 
                     google_api_key=api_key,
-                    temperature=0.3,  # Precisión quirúrgica según prompt GERARD
-                    top_p=0.95,
-                    top_k=40
+                    temperature=0.4,  # Precisión quirúrgica según prompt GERARD
+                    top_p=0.90,
+                    top_k=25
                 )
             except Exception as e:
                 st.warning(f"No se pudo inicializar el LLM (GoogleGenerativeAI): {e}. La aplicación usará un modo de recuperación local sin LLM.")
