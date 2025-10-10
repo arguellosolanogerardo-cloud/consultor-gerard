@@ -168,18 +168,35 @@ def create_faiss_index(text_chunks, force_recreate=False, resume=False):
         
         # Construir índice (con progress bar, checkpoints, reintentos)
         index_file = os.path.join(FAISS_INDEX_PATH, "index.faiss")
-        builder.build_from_documents(
+        faiss_index = builder.build_from_documents(
             documents=text_chunks,
             output_path=index_file,
             resume_from_checkpoint=resume
         )
         
-        # Guardar también el archivo .pkl con los documentos
-        import pickle
-        pkl_file = os.path.join(FAISS_INDEX_PATH, "index.pkl")
-        with open(pkl_file, 'wb') as f:
-            pickle.dump(text_chunks, f)
-        print(f"💾 Documentos guardados: {pkl_file}")
+        # IMPORTANTE: Crear vectorstore de LangChain para compatibilidad
+        print(f"\n🔧 Creando vectorstore compatible con LangChain...")
+        from langchain_community.vectorstores import FAISS
+        from langchain_community.docstore.in_memory import InMemoryDocstore
+        
+        # Crear docstore con los documentos
+        docstore = InMemoryDocstore({str(i): doc for i, doc in enumerate(text_chunks)})
+        
+        # Crear mapping de índice a doc_id
+        index_to_docstore_id = {i: str(i) for i in range(len(text_chunks))}
+        
+        # Crear vectorstore de LangChain
+        vectorstore = FAISS(
+            embedding_function=embeddings,
+            index=faiss_index,
+            docstore=docstore,
+            index_to_docstore_id=index_to_docstore_id
+        )
+        
+        # Guardar con LangChain (formato compatible)
+        print(f"💾 Guardando vectorstore en formato LangChain...")
+        vectorstore.save_local(FAISS_INDEX_PATH)
+        print(f"✅ Vectorstore guardado correctamente")
         
         # Éxito - mostrar resumen
         print(f"\n{'='*70}")
