@@ -848,14 +848,14 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
             
             # Contenedor temporal para mostrar GIF + texto de carga
             with response_placeholder.container():
-                # GIF ovni centrado
-                col1, col2, col3 = st.columns([1, 1, 1])
+                # GIF ovni centrado (SIN width para mantener animación)
+                col1, col2, col3 = st.columns([1.5, 1, 1.5])
                 with col2:
-                    st.image("assets/ovni.gif", width=100)
+                    st.image("assets/ovni.gif")  # SIN width parameter
                 
                 # Texto "Buscando..." con puntos animados debajo del GIF
                 loader_html = """
-                <div class="loader-container" style="text-align: center; margin-top: -10px;">
+                <div class="loader-container" style="text-align: center; margin-top: -15px;">
                     <span class="dot"></span><span class="dot"></span><span class="dot"></span>
                     <span style='margin-left: 10px; font-style: italic; color: #888;'>Buscando...</span>
                 </div>
