@@ -398,12 +398,14 @@ def generate_download_filename() -> str:
     if not user_questions:
         questions_text = "conversacion"
     else:
-        # Unir preguntas con un guion bajo para más claridad
-        questions_text = "_".join(user_questions)
+        # Unir preguntas con símbolo de interrogación como separador visible
+        questions_text = "?_".join(user_questions)
 
-    # Sanitizar y truncar a 230 caracteres
-    sanitized_name = re.sub(r'[\\/:*?"<>|]', '', questions_text)
-    truncated_questions = sanitized_name[:230].strip()
+    # Sanitizar SOLO caracteres inválidos para nombres de archivo (NO truncar)
+    # Mantener espacios y permitir cualquier longitud
+    sanitized_name = re.sub(r'[\\/:*"<>|]', '', questions_text)  # Eliminado ? del regex
+    # NO truncar - permitir todo el texto completo
+    full_questions = sanitized_name.strip()
 
     user_name = st.session_state.get('user_name', 'usuario').upper()
     
@@ -412,8 +414,8 @@ def generate_download_filename() -> str:
     date_str = now.strftime('%Y%m%d')
     time_str = now.strftime('%H%M')  # Solo hora y minuto
     
-    # Formato final: CONSULTA_DE_NOMBREUSUARIO_TITULOS_20251009_2109.txt
-    return f"CONSULTA_DE_{user_name}_{truncated_questions}_{date_str}_{time_str}.txt"
+    # Formato final: CONSULTA_DE_NOMBREUSUARIO_pregunta1?_pregunta2?_pregunta3_20251009_2109.txt
+    return f"CONSULTA_DE_{user_name}_{full_questions}_{date_str}_{time_str}.txt"
 
 
 def _escape_ampersand(text: str) -> str:
