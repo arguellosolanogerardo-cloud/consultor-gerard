@@ -809,10 +809,12 @@ if st.session_state.messages:
     
     st.markdown("---")
 
-# --- Mostrar GIF de pregunta justo antes del input ---
-col_center = st.columns([1, 2, 1])
+# --- Mostrar GIF de pregunta casi pegado al input ---
+st.markdown("<div style='margin-bottom: -15px;'></div>", unsafe_allow_html=True)
+col_center = st.columns([1.5, 1, 1.5])
 with col_center[1]:
-    st.image("assets/pregunta.gif", use_container_width=True)
+    st.image("assets/pregunta.gif", width=120)
+st.markdown("<div style='margin-top: -20px;'></div>", unsafe_allow_html=True)
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
