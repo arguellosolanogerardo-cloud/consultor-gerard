@@ -762,6 +762,25 @@ if st.session_state.messages:
     st.markdown("---")
     st.markdown("### 📥 Exportar Conversación")
     
+    # Script JavaScript para mejorar compatibilidad con móviles
+    st.markdown("""
+    <script>
+    // Forzar descarga en móviles
+    function forceDownload(data, filename, mimeType) {
+        const blob = new Blob([data], { type: mimeType });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    }
+    </script>
+    """, unsafe_allow_html=True)
+    
     conversation_text = get_conversation_text()
     file_name = generate_download_filename()
     
@@ -774,7 +793,8 @@ if st.session_state.messages:
             file_name=file_name,
             mime="text/plain",
             key="download_txt_bottom",
-            use_container_width=True
+            use_container_width=True,
+            help="Toca para descargar el archivo de texto"
         )
     
     with col2:
@@ -808,6 +828,7 @@ if st.session_state.messages:
                     file_name=pdf_filename,
                     mime="application/pdf",
                     key="download_pdf_bottom",
+                    help="Toca para descargar el archivo PDF",
                     use_container_width=True
                 )
             except Exception as e:
