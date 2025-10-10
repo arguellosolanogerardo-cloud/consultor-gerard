@@ -1,20 +1,19 @@
 """
 Este script se encarga de procesar documentos de texto (en formato .srt),
-dividirlos en fragmentos (chunks) y crear una base de datos vectorial utilizando ChromaDB.
+dividirlos en fragmentos (chunks) y crear una base de datos vectorial utilizando FAISS.
 Los embeddings se generan utilizando la API de Google Generative AI.
 
-Funcionalidades:
-- Carga de variables de entorno para la clave de API de Google.
-- Lee todos los archivos .srt de un directorio especificado.
-- Divide el texto de los documentos en fragmentos más pequeños para su procesamiento.
-- Genera embeddings para cada fragmento de texto y los almacena en una base de datos ChromaDB.
-- Guarda la base de datos en el disco para su uso posterior.
-- Maneja los límites de tasa de la API introduciendo pausas entre solicitudes.
+VERSIÓN OPTIMIZADA con:
+- Rate limiting robusto para evitar cortes de API
+- Procesamiento en lotes con reintentos automáticos
+- Guardado incremental y checkpoints
+- Capacidad de reanudar si se interrumpe
 
 Uso:
 - Asegúrate de tener un archivo .env con tu GOOGLE_API_KEY.
 - Ejecuta el script con `python ingestar.py`.
-- Para forzar la recreación de la base de datos, usa `python ingestar.py --force`.
+- Para forzar la recreación, usa `python ingestar.py --force`.
+- Para reanudar proceso interrumpido, usa `python ingestar.py --resume`.
 """
 
 import os
@@ -22,22 +21,26 @@ import shutil
 import argparse
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from dotenv import load_dotenv
 from tqdm import tqdm
+from faiss_builder import FAISSVectorBuilder, BuilderConfig
+import pickle
 
 # Cargar variables de entorno
 load_dotenv()
 
 # Verificar que la API Key existe
 if not os.getenv("GOOGLE_API_KEY"):
-    print("No se encontró la clave de API para Google. Por favor, configura la variable de entorno GOOGLE_API_KEY.")
+    print("❌ No se encontró la clave de API para Google.")
+    print("Por favor, configura la variable de entorno GOOGLE_API_KEY.")
     exit()
 
 # Rutas
 DATA_PATH = "documentos_srt/"
 FAISS_INDEX_PATH = "faiss_index"
+FAISS_INDEX_FILE = os.path.join(FAISS_INDEX_PATH, "index.faiss")
+FAISS_PKL_FILE = os.path.join(FAISS_INDEX_PATH, "index.pkl")
 
 def get_srt_text(data_path):
     """
