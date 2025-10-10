@@ -743,7 +743,7 @@ else:
     <p class="sub-welcome-text">AHORA YA PUEDES REALIZAR TUS PREGUNTAS EN LA PARTE INFERIOR</p>
     """, unsafe_allow_html=True)
 
-# --- Botones de Exportación (siempre visibles cuando hay conversación) ---
+# --- Botones de Exportación (visibles cuando hay conversación) ---
 if st.session_state.messages:
     st.markdown("---")
     st.markdown("### 📥 Exportar Conversación")
@@ -804,6 +804,9 @@ if st.session_state.messages:
             st.caption("ReportLab no disponible")
     
     st.markdown("---")  # Separador visual
+else:
+    # Mensaje informativo cuando no hay conversación
+    st.info("💡 Los botones de exportación aparecerán aquí después de tu primera pregunta")
 
 # --- Mostrar historial con avatares personalizados ---
 for message in st.session_state.messages:
