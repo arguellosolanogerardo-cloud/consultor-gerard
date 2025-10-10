@@ -748,6 +748,9 @@ if st.session_state.messages:
     st.markdown("---")
     st.markdown("### 📥 Exportar Conversación")
     
+    # Debug: mostrar cuántos mensajes hay
+    st.caption(f"DEBUG: {len(st.session_state.messages)} mensajes en el historial")
+    
     conversation_text = get_conversation_text()
     file_name = generate_download_filename()
     
@@ -800,13 +803,16 @@ if st.session_state.messages:
                 )
             except Exception as e:
                 st.error(f"Error generando PDF: {e}")
+                import traceback
+                st.code(traceback.format_exc())
         else:
-            st.caption("ReportLab no disponible")
+            st.warning("⚠️ ReportLab no está disponible. Instala con: pip install reportlab")
     
     st.markdown("---")  # Separador visual
 else:
     # Mensaje informativo cuando no hay conversación
     st.info("💡 Los botones de exportación aparecerán aquí después de tu primera pregunta")
+    st.caption(f"DEBUG: st.session_state.messages está vacío o es None: {st.session_state.messages}")
 
 # --- Mostrar historial con avatares personalizados ---
 for message in st.session_state.messages:
