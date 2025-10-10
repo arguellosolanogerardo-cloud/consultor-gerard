@@ -902,9 +902,10 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
                         print(f"[ERROR] load_resources falló: {e}")
                         response_placeholder.error(f"No fue posible inicializar los recursos: {e}")
                         raise
-                    # CRÍTICO: Aumentar k=20 para recuperar más documentos y respuestas más completas
-                    retriever = vs.as_retriever(search_kwargs={"k": 20})
-                    print(f"[DEBUG] Retriever creado con k=20 documentos")
+                    # CRÍTICO: Aumentar k=50 para recuperar MÁS documentos y mejorar recall
+                    # Esto ayuda a encontrar información en chunks grandes o documentos menos similares
+                    retriever = vs.as_retriever(search_kwargs={"k": 50})
+                    print(f"[DEBUG] Retriever creado con k=50 documentos")
 
                     # Si el LLM no se pudo inicializar, usamos un FakeChain que sólo regresa documentos
                     if llm_loaded is None:
