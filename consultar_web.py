@@ -749,7 +749,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"], unsafe_allow_html=True)
 
-# --- Botones de Exportación (DESPUÉS del historial) ---
+# --- Botones de Exportación (solo si hay conversación) ---
 if st.session_state.messages:
     st.markdown("---")
     st.markdown("### 📥 Exportar Conversación")
@@ -757,7 +757,6 @@ if st.session_state.messages:
     conversation_text = get_conversation_text()
     file_name = generate_download_filename()
     
-    # Mostrar en dos columnas
     col1, col2 = st.columns([1, 1])
     
     with col1:
@@ -774,7 +773,6 @@ if st.session_state.messages:
         pdf_filename = file_name.rsplit('.', 1)[0] + '.pdf'
         if REPORTLAB_AVAILABLE:
             try:
-                # Construir HTML para PDF con colores preservados
                 user_name_for_file = st.session_state.get('user_name', 'usuario')
                 html_parts = []
                 
@@ -940,6 +938,9 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
                 
                 response_placeholder.markdown(response_html, unsafe_allow_html=True)
                 st.session_state.messages.append({"role": "assistant", "content": response_html})
+                
+                # Forzar rerun para mostrar botones inmediatamente después de la primera respuesta
+                st.rerun()
 
                 # --- Ofrecer descarga del último intercambio (pregunta + respuesta) ---
                 try:
