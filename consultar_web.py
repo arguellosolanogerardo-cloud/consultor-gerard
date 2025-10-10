@@ -791,7 +791,7 @@ if st.session_state.messages:
                 html_parts.append(f'<br/><p style="color: #28a745;">Usuario: {user_name_for_file}</p>')
                 html_full = ''.join(html_parts)
                 
-                pdf_filename = f"CONSULTA_DE_{user_name_for_file}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+                # pdf_filename ya está definido arriba con las preguntas incluidas
                 pdf_bytes = generate_pdf_from_html(html_full, title_base=f"Consulta - {user_name_for_file}", user_name=user_name_for_file)
                 
                 st.download_button(
