@@ -743,64 +743,73 @@ else:
     <p class="sub-welcome-text">AHORA YA PUEDES REALIZAR TUS PREGUNTAS EN LA PARTE INFERIOR</p>
     """, unsafe_allow_html=True)
 
-# --- Mostrar historial con avatares personalizados ---
-for message in st.session_state.messages:
-    avatar = user_avatar if message["role"] == "user" else assistant_avatar
-    with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"], unsafe_allow_html=True)
-
-# --- Botón de Descarga ---
+# --- Botones de Exportación (siempre visibles cuando hay conversación) ---
 if st.session_state.messages:
+    st.markdown("---")
+    st.markdown("### 📥 Exportar Conversación")
+    
     conversation_text = get_conversation_text()
     file_name = generate_download_filename()
-
-    col1, col2 = st.columns([1,1])
+    
+    # Mostrar en dos columnas para mejor visualización
+    col1, col2 = st.columns([1, 1])
+    
     with col1:
         st.download_button(
-            label="⬇️ Descargar Conversación (TXT)",
+            label="📥 Descargar TXT",
             data=conversation_text,
             file_name=file_name,
             mime="text/plain",
-            key="download_button"
+            key="download_txt_top",
+            use_container_width=True
         )
+    
     with col2:
-        pdf_filename = file_name.rsplit('.',1)[0] + '.pdf'
+        pdf_filename = file_name.rsplit('.', 1)[0] + '.pdf'
         if REPORTLAB_AVAILABLE:
             try:
-                # Para la exportación completa: construiremos el texto concatenando preguntas y respuestas
-                # y aplicaremos wrapping a 200 caracteres para que no se corten palabras arbitrariamente.
-                convo_lines = []
+                # Construir HTML para PDF con colores preservados
+                user_name_for_file = st.session_state.get('user_name', 'usuario')
+                html_parts = []
+                
                 for msg in st.session_state.messages:
                     role = msg.get('role')
                     content_html = msg.get('content', '')
-                    plain = re.sub(r'<[^>]+>', '', content_html).strip()
+                    
                     if role == 'user':
-                        wrapped = textwrap.fill(plain, width=200)
-                        convo_lines.append(f"Pregunta: {wrapped}")
+                        html_parts.append(f'<p style="color: #000000; font-weight: bold;">Pregunta:</p>')
+                        html_parts.append(f'<p style="color: #000000;">{content_html}</p>')
                     else:
-                        wrapped = textwrap.fill(plain, width=200)
-                        convo_lines.append(f"Respuesta: {wrapped}")
-
-                # Añadir al final el nombre de la persona que realizó las preguntas
-                user_name_for_file = st.session_state.get('user_name', 'usuario')
-                convo_lines.append('')
-                convo_lines.append(f"Usuario que realizó las preguntas: {user_name_for_file}")
-
-                conversation_full = '\n\n'.join(convo_lines)
-
-                pdf_filename = f"{user_name_for_file}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                pdf_bytes = generate_pdf_bytes_text(conversation_full, title_base=f"Conversación - {user_name_for_file}")
+                        html_parts.append(f'<p style="color: #000000; font-weight: bold;">Respuesta:</p>')
+                        html_parts.append(f'<p>{content_html}</p>')
+                    html_parts.append('<br/>')
+                
+                html_parts.append(f'<br/><p style="color: #28a745;">Usuario: {user_name_for_file}</p>')
+                html_full = ''.join(html_parts)
+                
+                pdf_filename = f"CONSULTA_DE_{user_name_for_file}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+                pdf_bytes = generate_pdf_from_html(html_full, title_base=f"Consulta - {user_name_for_file}", user_name=user_name_for_file)
+                
                 st.download_button(
                     label="📄 Exportar PDF",
                     data=pdf_bytes,
                     file_name=pdf_filename,
                     mime="application/pdf",
-                    key="download_pdf_button"
+                    key="download_pdf_top",
+                    use_container_width=True
                 )
             except Exception as e:
-                st.error(f"No se pudo generar el PDF: {e}")
+                st.error(f"Error generando PDF: {e}")
         else:
-            st.info("Exportar a PDF no disponible. Instala reportlab: `pip install reportlab` para habilitar esta función.")
+            st.caption("ReportLab no disponible")
+    
+    st.markdown("---")  # Separador visual
+
+# --- Mostrar historial con avatares personalizados ---
+for message in st.session_state.messages:
+    avatar = user_avatar if message["role"] == "user" else assistant_avatar
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"], unsafe_allow_html=True)
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
