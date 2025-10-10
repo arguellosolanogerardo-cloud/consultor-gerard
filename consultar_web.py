@@ -845,18 +845,22 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
 
         with st.chat_message("assistant", avatar=assistant_avatar):
             response_placeholder = st.empty()
-            loader_html = """
-            <div class="loader-container" style="text-align: center;">
-                <div style="margin-bottom: 10px;">
-                    <img src="assets/ovni.gif" alt="Buscando" style="width: 80px; height: auto;">
-                </div>
-                <div>
+            
+            # Contenedor temporal para mostrar GIF + texto de carga
+            with response_placeholder.container():
+                # GIF ovni centrado
+                col1, col2, col3 = st.columns([1, 1, 1])
+                with col2:
+                    st.image("assets/ovni.gif", width=100)
+                
+                # Texto "Buscando..." con puntos animados debajo del GIF
+                loader_html = """
+                <div class="loader-container" style="text-align: center; margin-top: -10px;">
                     <span class="dot"></span><span class="dot"></span><span class="dot"></span>
                     <span style='margin-left: 10px; font-style: italic; color: #888;'>Buscando...</span>
                 </div>
-            </div>
-            """
-            response_placeholder.markdown(loader_html, unsafe_allow_html=True)
+                """
+                st.markdown(loader_html, unsafe_allow_html=True)
 
             try:
                 # Construir retrieval_chain a demanda si no existe
