@@ -817,7 +817,13 @@ with col_center[1]:
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
     if not st.session_state.user_name:
-        st.warning("Por favor, introduce tu nombre para continuar.")
+        st.markdown("""
+        <div style="text-align: center; margin: 20px 0;">
+            <p style="color: red; font-size: 1.3em; font-weight: bold; animation: pulse 1.5s infinite;">
+                POR FAVOR¡ , introduce primero TU NOMBRE en la casilla de arriba para poder continuar. GRACIAS.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         # --- ¡AQUÍ ESTÁ EL CAMBIO! ---
         # Se reemplaza la imagen por un texto animado con CSS
