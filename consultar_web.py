@@ -810,16 +810,13 @@ if st.session_state.messages:
     st.markdown("---")
 
 # --- Mostrar GIF de pregunta CASI PEGADO al input (parte inferior) ---
-# Primero crear espacio flexible para empujarlo hacia abajo
-st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
-
 # Centrar el GIF y dejarlo en tamaño natural para que se anime
 col1, col2, col3 = st.columns([2, 1, 2])
 with col2:
     st.image("assets/pregunta.gif")  # SIN width para mantener animación
 
-# Margen negativo para acercarlo MÁS al input
-st.markdown('<div style="margin-top: -30px;"></div>', unsafe_allow_html=True)
+# Margen negativo MUY agresivo para pegarlo casi a la casilla
+st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsafe_allow_html=True)
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
