@@ -1011,9 +1011,9 @@ st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsa
 # --- Input del usuario con avatares personalizados ---
 # Crear placeholder dinámico basado en el nombre del usuario
 if st.session_state.user_name:
-    placeholder_text = f"{st.session_state.user_name} ESPERANDO TU PREGUNTA..."
+    placeholder_text = f"{st.session_state.user_name} PREGUNTA¡..."
 else:
-    placeholder_text = "ESPERANDO TU PREGUNTA..."
+    placeholder_text = "PREGUNTA¡..."
 
 if prompt_input := st.chat_input(placeholder_text):
     pass  # Procesar después
