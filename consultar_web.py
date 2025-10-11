@@ -917,6 +917,13 @@ st.markdown("""
     caret-color: black !important;
 }
 
+/* Clase para ocultar el texto PREGUNTA durante la búsqueda */
+.pregunta-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
 /* Fondo verde para la casilla de nombre */
 input[aria-label="Tu Nombre"] {
     background-color: #28a745 !important;
@@ -1241,9 +1248,7 @@ if prompt_input:
                     (function hideElements() {
                         const preguntaPrompt = window.parent.document.getElementById('pregunta-prompt');
                         if (preguntaPrompt) {
-                            preguntaPrompt.style.display = 'none';
-                            preguntaPrompt.style.visibility = 'hidden';
-                            preguntaPrompt.style.opacity = '0';
+                            preguntaPrompt.classList.add('pregunta-hidden');
                         }
                         
                         // Ocultar el placeholder agregando clase Y borrando el atributo
@@ -1256,9 +1261,6 @@ if prompt_input:
                             chatTextarea.setAttribute('placeholder', '');
                             chatTextarea.removeAttribute('data-placeholder-set');
                         }
-                        
-                        // Reintentar después de 100ms para asegurar
-                        setTimeout(hideElements, 100);
                     })();
                 </script>
                 """
@@ -1380,7 +1382,7 @@ if prompt_input:
                             // Restaurar el texto "PREGUNTA¡..." y el placeholder después de mostrar la respuesta
                             const preguntaPrompt = window.parent.document.getElementById('pregunta-prompt');
                             if (preguntaPrompt) {
-                                preguntaPrompt.style.display = 'block';
+                                preguntaPrompt.classList.remove('pregunta-hidden');
                             }
                             
                             // Restaurar el placeholder removiendo clase Y restaurando el atributo
