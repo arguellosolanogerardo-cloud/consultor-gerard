@@ -925,6 +925,31 @@ st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsa
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
+    pass  # Procesar después
+
+# Link SALIR debajo de la casilla de preguntas (izquierda, responsive)
+st.markdown("""
+<style>
+    .link-salir-debajo a {
+        color: #FF4B4B;
+        font-size: 20px;
+        font-weight: bold;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    .link-salir-debajo a:hover {
+        color: #FF6B6B;
+        text-decoration: underline;
+    }
+</style>
+<div class="link-salir-debajo" style="text-align: left; margin-top: 10px; margin-bottom: 20px; margin-left: 10px;">
+    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank">
+        🚪 SALIR
+    </a>
+</div>
+""", unsafe_allow_html=True)
+
+if prompt_input:
     if not st.session_state.user_name:
         st.markdown("""
         <div style="text-align: center; margin: 20px 0;">
@@ -1115,44 +1140,5 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
 
             except Exception as e:
                 response_placeholder.error(f"Ocurrió un error al procesar tu pregunta: {e}")
-
-# Link SALIR al final de toda la página (responsive)
-st.markdown("""
-<style>
-    @media (max-width: 768px) {
-        /* Móvil: centrado */
-        .link-salir-final {
-            text-align: center !important;
-            margin-top: 30px !important;
-            margin-bottom: 30px !important;
-        }
-    }
-    @media (min-width: 769px) {
-        /* PC: alineado a la derecha */
-        .link-salir-final {
-            text-align: right !important;
-            margin-top: 30px !important;
-            margin-bottom: 30px !important;
-            padding-right: 50px !important;
-        }
-    }
-    .link-salir-final a {
-        color: #FF4B4B;
-        font-size: 20px;
-        font-weight: bold;
-        text-decoration: none;
-        transition: all 0.3s ease;
-    }
-    .link-salir-final a:hover {
-        color: #FF6B6B;
-        text-decoration: underline;
-    }
-</style>
-<div class="link-salir-final">
-    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank">
-        🚪 SALIR
-    </a>
-</div>
-""", unsafe_allow_html=True)
 
 
