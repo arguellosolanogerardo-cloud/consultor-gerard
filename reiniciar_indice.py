@@ -25,6 +25,7 @@ AUTOMÁTICO:
 import os
 import sys
 import shutil
+import time
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -49,8 +50,8 @@ FAISS_DIR = "faiss_index"
 BACKUP_DIR = f"faiss_index_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
 # NUEVOS PARÁMETROS (chunks más pequeños)
-CHUNK_SIZE = 500      # Antes: 1000
-CHUNK_OVERLAP = 100   # Antes: 200
+CHUNK_SIZE = 300      # Ahora: 300 (más pequeño)
+CHUNK_OVERLAP = 50    # Ahora: 50 (menos solapamiento)
 
 print(f"""
 ╔══════════════════════════════════════════════════════════╗
@@ -128,37 +129,83 @@ except Exception as e:
 
 # === 4. CREAR EMBEDDINGS ===
 print("\n" + "="*60)
-print("4️⃣  INICIALIZANDO EMBEDDINGS")
+print("4️⃣  INICIALIZANDO EMBEDDINGS CON RETRY")
 print("="*60)
 
-try:
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    print("✅ Embeddings de Google listos")
-except Exception as e:
-    print(f"❌ ERROR: {e}")
-    sys.exit(1)
+max_retries = 3
+for attempt in range(max_retries):
+    try:
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/embedding-001",
+            task_type="retrieval_document"  # Optimizado para documentos
+        )
+        print("✅ Embeddings de Google listos")
+        break
+    except Exception as e:
+        if attempt < max_retries - 1:
+            wait_time = (attempt + 1) * 5
+            print(f"⚠️ Intento {attempt + 1}/{max_retries} falló: {e}")
+            print(f"   Esperando {wait_time}s antes de reintentar...")
+            time.sleep(wait_time)
+        else:
+            print(f"❌ ERROR tras {max_retries} intentos: {e}")
+            sys.exit(1)
 
 # === 5. CREAR ÍNDICE FAISS ===
 print("\n" + "="*60)
-print("5️⃣  CREANDO ÍNDICE FAISS")
+print("5️⃣  CREANDO ÍNDICE FAISS CON PROTECCIÓN ANTI-RATE-LIMIT")
 print("="*60)
-print("⏳ Procesando en batches (puede tomar varios minutos)...\n")
+print("⏳ Procesando en batches con pausas estratégicas...\n")
+print("ℹ️ Pausas cada 5 batches para evitar cortes de Google\n")
 
 try:
-    BATCH_SIZE = 100
+    BATCH_SIZE = 50  # Reducido de 100 a 50 para más seguridad
+    PAUSE_EVERY = 5  # Pausar cada 5 batches
+    PAUSE_SECONDS = 3  # Pausa de 3 segundos
+    
     vectorstore = None
     total_batches = (len(chunks) - 1) // BATCH_SIZE + 1
     
     for i in range(0, len(chunks), BATCH_SIZE):
         batch = chunks[i:i+BATCH_SIZE]
         batch_num = i // BATCH_SIZE + 1
-        print(f"   Batch {batch_num}/{total_batches} ({len(batch)} chunks)...")
         
-        if vectorstore is None:
-            vectorstore = FAISS.from_documents(batch, embeddings)
-        else:
-            batch_vs = FAISS.from_documents(batch, embeddings)
-            vectorstore.merge_from(batch_vs)
+        try:
+            print(f"   Batch {batch_num}/{total_batches} ({len(batch)} chunks)...", end=" ", flush=True)
+            
+            if vectorstore is None:
+                vectorstore = FAISS.from_documents(batch, embeddings)
+            else:
+                batch_vs = FAISS.from_documents(batch, embeddings)
+                vectorstore.merge_from(batch_vs)
+            
+            print("✅")
+            
+            # PAUSA ESTRATÉGICA cada N batches
+            if batch_num % PAUSE_EVERY == 0 and batch_num < total_batches:
+                print(f"   💤 Pausa de {PAUSE_SECONDS}s (evitar rate limit)...", flush=True)
+                time.sleep(PAUSE_SECONDS)
+        
+        except Exception as batch_error:
+            print(f"⚠️ Error en batch {batch_num}")
+            print(f"   Esperando 10 segundos y reintentando...")
+            time.sleep(10)
+            
+            # Reintentar el batch
+            try:
+                if vectorstore is None:
+                    vectorstore = FAISS.from_documents(batch, embeddings)
+                else:
+                    batch_vs = FAISS.from_documents(batch, embeddings)
+                    vectorstore.merge_from(batch_vs)
+                print(f"   ✅ Batch {batch_num} completado en reintento")
+            except Exception as retry_error:
+                print(f"   ❌ ERROR FATAL en batch {batch_num}: {retry_error}")
+                print(f"   Guardando progreso parcial...")
+                if vectorstore:
+                    vectorstore.save_local(FAISS_DIR + "_parcial")
+                    print(f"   ⚠️ Índice parcial guardado: {FAISS_DIR}_parcial")
+                raise
     
     print(f"\n✅ Índice FAISS creado: {len(chunks)} chunks")
     
@@ -238,10 +285,13 @@ print(f"""
    • Backup: {BACKUP_DIR}
 
 🎯 MEJORAS:
-   ✓ Chunks 50% más pequeños
+   ✓ Chunks 70% más pequeños (1000→300)
    ✓ Mayor precisión en búsquedas
    ✓ Menos dilución semántica
-   ✓ k=50 en consultar_web.py
+   ✓ k=25 en consultar_web.py
+   ✓ Protección anti-rate-limit de Google
+   ✓ Retry automático en errores
+   ✓ Guardado parcial si falla
 
 🚀 PRÓXIMO PASO:
    Reinicia Streamlit:

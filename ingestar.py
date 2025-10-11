@@ -22,6 +22,7 @@ import argparse
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 from tqdm import tqdm
 from faiss_builder import FAISSVectorBuilder, BuilderConfig
@@ -74,34 +75,81 @@ def get_text_chunks(docs):
 def create_vector_store(text_chunks):
     """
     Crea y guarda la base de datos vectorial FAISS procesando los chunks en lotes.
+    PROTECCIÓN ANTI-RATE-LIMIT: Batches pequeños, pausas estratégicas, retry automático.
     """
     import time
     try:
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        # Inicializar embeddings con retry
+        embeddings = None
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                embeddings = GoogleGenerativeAIEmbeddings(
+                    model="models/embedding-001",
+                    task_type="retrieval_document"
+                )
+                print("✅ Embeddings de Google listos")
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 5
+                    print(f"⚠️ Intento {attempt + 1}/{max_retries} falló: {e}")
+                    print(f"   Esperando {wait_time}s antes de reintentar...")
+                    time.sleep(wait_time)
+                else:
+                    raise
+        
         print(f"Creando índice FAISS a partir de {len(text_chunks)} chunks.")
         
-        # Procesar en lotes de 100 para evitar timeouts
-        batch_size = 100
+        # CONFIGURACIÓN ANTI-RATE-LIMIT
+        batch_size = 50  # Reducido de 100 a 50
+        pause_every = 5  # Pausar cada 5 batches
+        pause_seconds = 3  # Pausa de 3 segundos
         total_batches = (len(text_chunks) + batch_size - 1) // batch_size
         
         vs = None
         for i in range(0, len(text_chunks), batch_size):
             batch = text_chunks[i:i+batch_size]
             batch_num = i // batch_size + 1
-            print(f"Procesando lote {batch_num}/{total_batches} ({len(batch)} chunks)...")
             
-            if vs is None:
-                # Primer lote: crear el índice
-                vs = FAISS.from_documents(batch, embeddings)
-            else:
-                # Lotes siguientes: agregar al índice existente
-                vs_batch = FAISS.from_documents(batch, embeddings)
-                vs.merge_from(vs_batch)
+            try:
+                print(f"Procesando lote {batch_num}/{total_batches} ({len(batch)} chunks)...", end=" ", flush=True)
+                
+                if vs is None:
+                    # Primer lote: crear el índice
+                    vs = FAISS.from_documents(batch, embeddings)
+                else:
+                    # Lotes siguientes: agregar al índice existente
+                    vs_batch = FAISS.from_documents(batch, embeddings)
+                    vs.merge_from(vs_batch)
+                
+                print("✅")
+                
+                # PAUSA ESTRATÉGICA cada N batches
+                if batch_num % pause_every == 0 and batch_num < total_batches:
+                    print(f"💤 Pausa de {pause_seconds}s (evitar rate limit)...", flush=True)
+                    time.sleep(pause_seconds)
             
-            # Pausa entre lotes para evitar rate limits
-            if i + batch_size < len(text_chunks):
-                print(f"Pausa de 2 segundos antes del siguiente lote...")
-                time.sleep(2)
+            except Exception as batch_error:
+                print(f"⚠️ Error en batch {batch_num}")
+                print(f"Esperando 10 segundos y reintentando...")
+                time.sleep(10)
+                
+                # Reintentar el batch
+                try:
+                    if vs is None:
+                        vs = FAISS.from_documents(batch, embeddings)
+                    else:
+                        vs_batch = FAISS.from_documents(batch, embeddings)
+                        vs.merge_from(vs_batch)
+                    print(f"✅ Batch {batch_num} completado en reintento")
+                except Exception as retry_error:
+                    print(f"❌ ERROR FATAL en batch {batch_num}: {retry_error}")
+                    print(f"Guardando progreso parcial...")
+                    if vs:
+                        vs.save_local(FAISS_INDEX_PATH + "_parcial")
+                        print(f"⚠️ Índice parcial guardado: {FAISS_INDEX_PATH}_parcial")
+                    raise
         
         # Guardar el índice completo
         if os.path.exists(FAISS_INDEX_PATH):
