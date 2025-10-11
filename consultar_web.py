@@ -925,32 +925,6 @@ st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsa
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
-    pass  # Procesar después
-
-# Botón SALIR debajo del chat_input, alineado a la derecha
-st.markdown("""
-<div style="text-align: right; margin-top: 10px; margin-bottom: 20px; margin-right: 10px;">
-    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank" style="text-decoration: none;">
-        <button style="
-            background-color: #FF4B4B;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
-            transition: all 0.3s ease;
-        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.1)';" 
-           onmouseout="this.style.backgroundColor='#FF4B4B'; this.style.transform='scale(1)';">
-            🚪 SALIR
-        </button>
-    </a>
-</div>
-""", unsafe_allow_html=True)
-
-if prompt_input:
     if not st.session_state.user_name:
         st.markdown("""
         <div style="text-align: center; margin: 20px 0;">
@@ -1141,5 +1115,28 @@ if prompt_input:
 
             except Exception as e:
                 response_placeholder.error(f"Ocurrió un error al procesar tu pregunta: {e}")
+
+# Botón SALIR flotante en esquina inferior derecha (SIEMPRE visible)
+st.markdown("""
+<div style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank" style="text-decoration: none;">
+        <button style="
+            background-color: #FF4B4B;
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.15)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.6)';" 
+           onmouseout="this.style.backgroundColor='#FF4B4B'; this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.5)';">
+            🚪 SALIR
+        </button>
+    </a>
+</div>
+""", unsafe_allow_html=True)
 
 
