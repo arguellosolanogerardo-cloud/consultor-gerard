@@ -929,20 +929,20 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
 
 # Botón SALIR debajo del chat_input, alineado a la derecha
 st.markdown("""
-<div style="text-align: right; margin-top: -60px; margin-bottom: 10px; margin-right: 10px;">
+<div style="text-align: right; margin-top: 10px; margin-bottom: 20px; margin-right: 10px;">
     <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank" style="text-decoration: none;">
         <button style="
             background-color: #FF4B4B;
             color: white;
             border: none;
-            padding: 8px 20px;
-            font-size: 14px;
+            padding: 12px 30px;
+            font-size: 20px;
             font-weight: bold;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
             transition: all 0.3s ease;
-        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.05)';" 
+        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.1)';" 
            onmouseout="this.style.backgroundColor='#FF4B4B'; this.style.transform='scale(1)';">
             🚪 SALIR
         </button>
