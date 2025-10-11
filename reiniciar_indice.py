@@ -156,12 +156,13 @@ print("\n" + "="*60)
 print("5️⃣  CREANDO ÍNDICE FAISS CON PROTECCIÓN ANTI-RATE-LIMIT")
 print("="*60)
 print("⏳ Procesando en batches con pausas estratégicas...\n")
-print("ℹ️ Pausas cada 5 batches para evitar cortes de Google\n")
+print("ℹ️ Pausas cada 10 batches para evitar cortes de Google")
+print(f"📊 Estimación: ~{len(chunks)//50} batches, ~{(len(chunks)//50)//10} pausas\n")
 
 try:
     BATCH_SIZE = 50  # Reducido de 100 a 50 para más seguridad
-    PAUSE_EVERY = 5  # Pausar cada 5 batches
-    PAUSE_SECONDS = 3  # Pausa de 3 segundos
+    PAUSE_EVERY = 10  # Pausar cada 10 batches (antes 5, optimizado para muchos archivos)
+    PAUSE_SECONDS = 2  # Pausa de 2 segundos (antes 3, más eficiente)
     
     vectorstore = None
     total_batches = (len(chunks) - 1) // BATCH_SIZE + 1

@@ -101,11 +101,14 @@ def create_vector_store(text_chunks):
         
         print(f"Creando índice FAISS a partir de {len(text_chunks)} chunks.")
         
-        # CONFIGURACIÓN ANTI-RATE-LIMIT
+        # CONFIGURACIÓN ANTI-RATE-LIMIT (optimizada para muchos archivos)
         batch_size = 50  # Reducido de 100 a 50
-        pause_every = 5  # Pausar cada 5 batches
-        pause_seconds = 3  # Pausa de 3 segundos
+        pause_every = 10  # Pausar cada 10 batches (optimizado para >1000 archivos)
+        pause_seconds = 2  # Pausa de 2 segundos (más eficiente)
         total_batches = (len(text_chunks) + batch_size - 1) // batch_size
+        
+        print(f"📊 Estimación: ~{total_batches} batches, ~{total_batches//pause_every} pausas")
+        print(f"⏱️ Tiempo estimado: ~{total_batches * 0.5 + (total_batches//pause_every) * pause_seconds} minutos\n")
         
         vs = None
         for i in range(0, len(text_chunks), batch_size):

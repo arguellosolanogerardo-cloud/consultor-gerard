@@ -15,12 +15,13 @@ Los scripts de indexación tienen **protección completa** contra cortes de Goog
 
 ### 2️⃣ **Pausas Estratégicas**
 ```python
-PAUSE_EVERY = 5      # Pausar cada 5 batches
-PAUSE_SECONDS = 3    # Pausa de 3 segundos
+PAUSE_EVERY = 10     # Pausar cada 10 batches (optimizado para muchos archivos)
+PAUSE_SECONDS = 2    # Pausa de 2 segundos (eficiente)
 ```
-- Cada 5 batches → pausa de 3 segundos
+- Cada 10 batches → pausa de 2 segundos (optimizado para ~2,000 archivos)
 - Da tiempo a Google para resetear contadores
 - Evita saturar la API
+- Balance entre velocidad y seguridad
 
 ### 3️⃣ **Retry Automático con Backoff**
 - **Primera falla**: Espera 10 segundos y reintenta
@@ -52,16 +53,16 @@ embeddings = GoogleGenerativeAIEmbeddings(
 ## 📊 Estimación de Tiempo y Requests
 
 ### Con tus archivos actuales:
-- **Archivos .srt**: ~200 archivos
-- **Chunks con size=300**: ~10,000-15,000 chunks estimados
-- **Batches**: 200-300 batches (50 chunks cada uno)
-- **Pausas**: ~40-60 pausas de 3 segundos
-- **Tiempo total estimado**: **25-35 minutos**
+- **Archivos .srt**: ~1,973 archivos (¡TODOS se indexarán!)
+- **Chunks con size=300**: ~100,000-120,000 chunks estimados
+- **Batches**: 2,000-2,400 batches (50 chunks cada uno)
+- **Pausas**: ~200-240 pausas de 2 segundos
+- **Tiempo total estimado**: **3-4 HORAS**
 
 ### Distribución del tiempo:
-- ⏱️ **Procesamiento real**: ~15-20 minutos
-- 💤 **Pausas anti-rate-limit**: ~3-5 minutos
-- 🔄 **Overhead (carga, guardado)**: ~5-10 minutos
+- ⏱️ **Procesamiento real**: ~2.5-3 horas
+- 💤 **Pausas anti-rate-limit**: ~8-10 minutos
+- 🔄 **Overhead (carga, guardado)**: ~15-20 minutos
 
 ---
 
@@ -128,11 +129,13 @@ Guardando progreso parcial...
 
 ## 🎯 Recomendaciones para Esta Noche
 
-1. **Cierra aplicaciones pesadas** (dejar más RAM disponible)
+1. **Ejecuta ANTES de dormir** (tomará 3-4 horas)
 2. **Asegura conexión estable** (WiFi o cable)
-3. **Ejecuta en terminal normal** (no minimices)
-4. **Monitorea los primeros 5 minutos** para confirmar que arranca bien
-5. **Deja correr toda la noche** (25-35 minutos estimados, pero dale margen)
+3. **Evita suspensión del PC** (Configuración → Energía → Nunca suspender)
+4. **Cierra aplicaciones pesadas** (dejar más RAM disponible)
+5. **Ejecuta en terminal normal** (no minimices)
+6. **Monitorea los primeros 10 minutos** para confirmar que arranca bien
+7. **Deja correr toda la madrugada** (3-4 horas estimadas)
 
 ---
 
