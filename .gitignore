@@ -29,10 +29,10 @@ chroma_db/
 chroma_db_backup_*/
 faiss_index_backup_*/
 
-# FAISS index artifacts - DEMASIADO GRANDE para GitHub (566 MB)
-# El índice se genera localmente con: python reiniciar_indice.py
-faiss_index/index.faiss
-faiss_index/index.pkl
+# FAISS index - INCLUIDO en repo para Streamlit Cloud (317 MB)
+# Índice actualizado: chunk_size=800, overlap=150, 84,266 docs
+# faiss_index/index.faiss
+# faiss_index/index.pkl
 
 # Backups and caches
 *_backup_*/
