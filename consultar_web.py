@@ -1143,14 +1143,14 @@ st.markdown("""
             background-color: #FF4B4B;
             color: white;
             border: none;
-            padding: 12px 30px;
+            padding: 6px 18px;
             font-size: 20px;
             font-weight: bold;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
-        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.1)';" 
+        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.05)';" 
            onmouseout="this.style.backgroundColor='#FF4B4B'; this.style.transform='scale(1)';">
             🚪 SALIR
         </button>
