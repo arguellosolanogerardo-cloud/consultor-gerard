@@ -1,57 +1,112 @@
-# 🚀 Sistema Robusto de Ingestión FAISS con Rate Limiting
+# 🚀 Guía de Re-Indexación Optimizada con Protección Google
 
 ## 📋 Descripción General
 
-Este sistema optimizado permite crear índices FAISS grandes sin que la API de Google corte el proceso. Incluye:
+Sistema optimizado para re-crear el índice FAISS con **chunks pequeños** y **protección completa** contra rate limiting de Google.
 
-- ✅ **Rate limiting inteligente** (ventana deslizante)
-- ✅ **Reintentos automáticos** con backoff exponencial
-- ✅ **Guardado incremental** cada N vectores
-- ✅ **Checkpoints** para reanudar procesos interrumpidos
-- ✅ **Progress bar** con ETA
-- ✅ **Manejo robusto de errores** de API
+### ✅ Protecciones Implementadas
+
+- ✅ **Batches pequeños** (50 chunks) para evitar saturar la API
+- ✅ **Pausas estratégicas** cada 5 batches (3 segundos)
+- ✅ **Retry automático** con espera de 10s en errores puntuales
+- ✅ **Retry embeddings** con backoff exponencial (3 intentos: 5s, 10s, 15s)
+- ✅ **Guardado parcial** de emergencia si falla
+- ✅ **Backup automático** del índice anterior
+- ✅ **Task type optimizado** para documentos
+
+### 📊 Configuración Actual
+
+```python
+CHUNK_SIZE = 300        # 70% más pequeño que antes (1000)
+CHUNK_OVERLAP = 50      # Menos solapamiento (antes 200)
+BATCH_SIZE = 50         # Chunks por batch
+PAUSE_EVERY = 5         # Pausar cada N batches
+PAUSE_SECONDS = 3       # Duración de la pausa
+```
+
+### ⏱️ Tiempo Estimado
+
+- **Procesamiento**: ~15-20 minutos
+- **Pausas anti-rate-limit**: ~3-5 minutos
+- **Overhead**: ~5-10 minutos
+- **TOTAL**: **25-35 minutos**
 
 ---
 
 ## 🗂️ Archivos del Sistema
 
-### Archivos Principales
+### Scripts Principales
 
-1. **`faiss_builder.py`** (331 líneas)
-   - Clase `FAISSVectorBuilder`: Motor principal con rate limiting
-   - Clase `RateLimiter`: Control de peticiones por minuto
-   - Clase `Checkpoint`: Guardado/recuperación de progreso
-   - Reintentos automáticos con backoff exponencial
+1. **`reiniciar_indice.py`** ⭐ **RECOMENDADO**
+   - Re-indexación optimizada con chunks pequeños (300)
+   - Todas las protecciones anti-rate-limit
+   - Backup automático del índice anterior
+   - Verificación con búsqueda de prueba
 
-2. **`ingestar_robusto.py`** (240 líneas)
-   - Script principal para crear índice FAISS completo
-   - Carga archivos .srt, divide en chunks, construye índice
-   - Soporta `--force` (recrear) y `--resume` (continuar)
+2. **`ingestar.py`**
+   - Script original mejorado con protecciones
+   - Usa chunks grandes (10000)
+   - Mismo nivel de protección que reiniciar_indice.py
 
-3. **`test_builder.py`** (100 líneas)
-   - Script de prueba con subset pequeño (5 archivos)
-   - Valida configuración antes de procesar todo
+3. **`check_ready.py`** 🆕
+   - Checklist pre-vuelo antes de indexar
+   - Verifica API key, dependencias, espacio en disco
+   - Test de conexión con Google
 
 ### Archivos Generados
 
 - `faiss_index/index.faiss` - Índice FAISS (vectores)
 - `faiss_index/index.pkl` - Documentos (metadatos)
-- `faiss_checkpoint.json` - Checkpoint temporal (se elimina al completar)
+- `faiss_index_backup_YYYYMMDD_HHMMSS/` - Backup del índice anterior
+- `faiss_index_parcial/` - Guardado de emergencia (si falla)
 
 ---
 
 ## 🛠️ Instalación de Dependencias
 
 ```powershell
-# Instalar paquetes necesarios
-pip install tenacity tqdm
+# Verificar que todo está instalado
+pip install -r requirements.txt
 ```
 
-**Nota**: Las demás dependencias ya están en `requirements.txt`
+**Dependencias críticas**:
+- `langchain-google-genai` - Embeddings y LLM
+- `langchain-community` - FAISS vectorstore
+- `faiss-cpu` - Motor de vectores
+- `python-dotenv` - Variables de entorno
 
 ---
 
 ## 🚦 Guía de Uso Paso a Paso
+
+### **Paso 0: Checklist Pre-Vuelo** 🆕
+
+Antes de empezar, verifica que todo está listo:
+
+```powershell
+python check_ready.py
+```
+
+**Este script verifica:**
+1. ✅ API Key de Google configurada
+2. ✅ Directorio `documentos_srt/` con archivos .srt
+3. ✅ Espacio libre en disco (>1GB)
+4. ✅ Dependencias Python instaladas
+5. ✅ Script `reiniciar_indice.py` presente y actualizado
+6. ✅ Índice actual (si existe)
+7. ✅ Test de conexión con Google Generative AI
+
+**Resultado esperado:**
+```
+✅ ¡TODO LISTO PARA LA INDEXACIÓN!
+
+Puedes ejecutar:
+   python reiniciar_indice.py
+```
+
+Si hay errores, el script te dirá exactamente qué corregir.
+
+---
 
 ### **Paso 1: Verificar API Key**
 
@@ -68,60 +123,126 @@ $env:GOOGLE_API_KEY = "TU_API_KEY_AQUI"
 
 ---
 
-### **Paso 2: Prueba Pequeña (RECOMENDADO)**
+### **Paso 2: Re-Indexar con Chunks Pequeños** ⭐ **RECOMENDADO**
 
-Antes de procesar todos los documentos, ejecuta una prueba con 5 archivos:
+Ejecuta el script optimizado con todas las protecciones:
 
 ```powershell
-python test_builder.py
+python reiniciar_indice.py
 ```
 
+**Qué hace este script:**
+1. 🔒 Crea backup automático del índice anterior
+2. 📂 Carga todos los archivos .srt
+3. ✂️ Divide en chunks de 300 caracteres (70% más pequeños)
+4. 🧠 Crea embeddings en batches de 50 con pausas estratégicas
+5. 💾 Construye y guarda el índice FAISS
+6. ✅ Verifica con búsqueda de prueba
+
 **Qué esperar:**
-- Procesará ~50-200 chunks (dependiendo del tamaño de los primeros 5 archivos)
-- Tomará ~5-10 minutos
-- Creará `faiss_index_test/` con el índice de prueba
-- Verás progress bar con ETA
+```
+╔══════════════════════════════════════════════════════════╗
+║        RE-INDEXACIÓN OPTIMIZADA - CHUNKS PEQUEÑOS        ║
+╚══════════════════════════════════════════════════════════╝
 
-**Si la prueba falla:**
-- Revisa la API key
-- Verifica conexión a internet
-- Chequea logs de error
+📦 Chunk size: 300 (antes: 1000) - 70% más pequeño
+🔗 Overlap: 50 (antes: 200)
+📂 Directorio: documentos_srt
+🎯 Índice: faiss_index
 
-**Si la prueba funciona:**
-- ✅ Puedes proceder al Paso 3
+1️⃣  BACKUP DEL ÍNDICE ANTERIOR
+✅ Backup: faiss_index_backup_20251010_220000
+✅ Índice anterior eliminado
+
+2️⃣  CARGANDO ARCHIVOS .SRT
+✅ 200 archivos cargados
+   1,500,000 caracteres totales
+
+3️⃣  DIVIDIENDO EN CHUNKS PEQUEÑOS
+✅ 12,345 chunks creados
+   62 chunks por documento (promedio)
+   Tamaño promedio: 280 caracteres
+   Rango: 100 - 300 caracteres
+
+4️⃣  INICIALIZANDO EMBEDDINGS CON RETRY
+✅ Embeddings de Google listos
+
+5️⃣  CREANDO ÍNDICE FAISS CON PROTECCIÓN ANTI-RATE-LIMIT
+⏳ Procesando en batches con pausas estratégicas...
+ℹ️ Pausas cada 5 batches para evitar cortes de Google
+
+   Batch 1/247 (50 chunks)... ✅
+   Batch 2/247 (50 chunks)... ✅
+   Batch 3/247 (50 chunks)... ✅
+   Batch 4/247 (50 chunks)... ✅
+   Batch 5/247 (50 chunks)... ✅
+   💤 Pausa de 3s (evitar rate limit)...
+   Batch 6/247 (50 chunks)... ✅
+   ...
+
+✅ Índice FAISS creado: 12,345 chunks
+
+6️⃣  GUARDANDO ÍNDICE
+✅ Índice guardado: faiss_index
+   Tamaño: 45.23 MB
+
+7️⃣  VERIFICACIÓN
+✅ Índice verificado: 12,345 documentos
+
+🧪 PRUEBA DE BÚSQUEDA:
+   Query: 'linaje ra tric jac bis'
+   Resultados: 5
+   
+   Top resultado:
+   • Score: 0.6234
+   • Fuente: DESCUBRIENDO...
+   ✅ ¡Encuentra el documento correcto!
+
+📊 ESTADÍSTICAS:
+   • Archivos: 200
+   • Chunks: 12,345 (antes: ~4,109)
+   • Chunk size: 300 caracteres (antes: 1000)
+   • Tamaño índice: 45.23 MB
+   • Backup: faiss_index_backup_20251010_220000
+
+🎯 MEJORAS:
+   ✓ Chunks 70% más pequeños (1000→300)
+   ✓ Mayor precisión en búsquedas
+   ✓ Menos dilución semántica
+   ✓ k=25 en consultar_web.py
+   ✓ Protección anti-rate-limit de Google
+   ✓ Retry automático en errores
+   ✓ Guardado parcial si falla
+```
+
+**Tiempo estimado**: 25-35 minutos
 
 ---
 
-### **Paso 3: Crear Índice Completo**
+### **Paso 3: Reiniciar Streamlit**
 
-Una vez validada la prueba, crea el índice con TODOS los documentos:
+Una vez completada la re-indexación:
 
 ```powershell
-python ingestar_robusto.py --force
+# Detener Streamlit si está corriendo
+Get-Process | Where-Object {$_.ProcessName -eq "streamlit"} | Stop-Process -Force
+
+# Reiniciar con el nuevo índice
+streamlit run consultar_web.py
 ```
 
-**Parámetros:**
-- `--force` : Elimina índice existente y crea uno nuevo
-- `--resume` : Continúa desde último checkpoint (si se interrumpió)
+**Verificación:**
+- Prueba una búsqueda que antes no funcionaba: "linaje ra tric jac bis"
+- Deberías obtener resultados relevantes ahora
 
-**Qué esperar:**
-- Procesará ~4000+ chunks (depende de cuántos archivos .srt tengas)
-- Tomará **1-2 horas** (con configuración conservadora)
-- Progress bar mostrará:
-  - Chunks procesados
-  - Batch actual/total
-  - Total de vectores
-  - ETA estimado
+---
 
-**Ejemplo de salida:**
+### **Alternativa: Script Original Mejorado**
 
-```
-======================================================================
-🚀 CONSTRUCCIÓN DE ÍNDICE FAISS CON RATE LIMITING ROBUSTO
-======================================================================
-📄 Total de chunks a procesar: 4109
-🔧 Modelo embeddings: models/embedding-001
-📐 Dimensión vectorial: 768
+Si prefieres usar el script original con chunks grandes pero protegido:
+
+```powershell
+python ingestar.py --force
 
 ⚙️ CONFIGURACIÓN:
    • Rate limit: 50 peticiones/minuto
