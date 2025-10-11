@@ -1082,7 +1082,7 @@ st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsa
 
 # Texto "PREGUNTA¡..." animado encima de la casilla
 st.markdown("""
-<div style="text-align: left; margin-left: 15px; margin-bottom: 5px;">
+<div id="pregunta-prompt" style="text-align: left; margin-left: 15px; margin-bottom: 5px;">
     <span style="color: #CC0000; font-weight: bold; font-size: 3.3em; animation: blink-slow 2s infinite;">PREGUNTA¡...</span>
 </div>
 """, unsafe_allow_html=True)
@@ -1144,6 +1144,13 @@ if prompt_input:
                     <span class="dot"></span><span class="dot"></span><span class="dot"></span>
                     <span style='margin-left: 10px; font-style: italic; color: #FF00FF; font-size: 1.8em; font-weight: bold; text-transform: uppercase;'>BUSCANDO...</span>
                 </div>
+                <script>
+                    // Ocultar el texto "PREGUNTA¡..." mientras se muestra "BUSCANDO..."
+                    const preguntaPrompt = window.parent.document.getElementById('pregunta-prompt');
+                    if (preguntaPrompt) {
+                        preguntaPrompt.style.display = 'none';
+                    }
+                </script>
                 """
                 st.markdown(loader_html, unsafe_allow_html=True)
 
@@ -1254,10 +1261,17 @@ if prompt_input:
                     """
                     <script>
                         setTimeout(function() {
+                            // Auto-scroll
                             window.parent.document.querySelector('section.main').scrollTo({
                                 top: window.parent.document.querySelector('section.main').scrollHeight,
                                 behavior: 'smooth'
                             });
+                            
+                            // Restaurar el texto "PREGUNTA¡..." después de mostrar la respuesta
+                            const preguntaPrompt = window.parent.document.getElementById('pregunta-prompt');
+                            if (preguntaPrompt) {
+                                preguntaPrompt.style.display = 'block';
+                            }
                         }, 300);
                     </script>
                     """,
