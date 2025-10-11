@@ -4,12 +4,14 @@
 
 ### 📦 Configuración Final
 ```
+archivos .srt   = 1,973 (¡todos se indexarán!)
 chunk_size      = 300  (70% más pequeño que antes)
 chunk_overlap   = 50   (reducido de 200)
 k retriever     = 25   (dentro del rango 15-25 recomendado)
 batch_size      = 50   (seguro para Google API)
-pause_every     = 5    (pausas cada 5 batches)
-pause_seconds   = 3    (duración de pausa)
+pause_every     = 10   (pausas cada 10 batches, optimizado)
+pause_seconds   = 2    (duración de pausa, optimizado)
+chunks estimados= ~100,000-120,000 (vs 4,109 actual)
 ```
 
 ### 🛡️ Protecciones Anti-Rate-Limit
@@ -20,7 +22,9 @@ pause_seconds   = 3    (duración de pausa)
 - ✅ Guardado parcial de emergencia
 - ✅ Backup automático del índice anterior
 
-### ⏱️ Tiempo Estimado: 25-35 minutos
+### ⏱️ Tiempo Estimado: 3-4 HORAS (tienes ~2,000 archivos .srt)
+
+**Nota**: Los tiempos iniciales (25-35 min) eran para ~200 archivos. Con 1,973 archivos, el proceso será más largo pero totalmente automatizado.
 
 ---
 
@@ -40,12 +44,16 @@ Puedes ejecutar:
 
 ---
 
-### Paso 2: Ejecutar Re-Indexación (25-35 minutos)
+### Paso 2: Ejecutar Re-Indexación (3-4 HORAS)
 ```powershell
 python reiniciar_indice.py
 ```
 
-**Monitorea los primeros 3-5 minutos para confirmar:**
+**⏰ TIEMPO ESTIMADO: 3-4 HORAS** (tienes 1,973 archivos .srt)
+
+**Recomendación**: Ejecuta esta noche antes de dormir, déjalo correr durante la madrugada.
+
+**Monitorea los primeros 5-10 minutos para confirmar:**
 - ✅ Backup del índice anterior creado
 - ✅ Archivos .srt cargados
 - ✅ Chunks divididos
@@ -92,42 +100,43 @@ streamlit run consultar_web.py
 ✅ Índice anterior eliminado
 
 2️⃣  CARGANDO ARCHIVOS .SRT
-✅ 200 archivos cargados
-   1,500,000 caracteres totales
+✅ 1,973 archivos cargados  ← ¡TODOS tus archivos nuevos!
+   ~15,000,000 caracteres totales
 
 3️⃣  DIVIDIENDO EN CHUNKS PEQUEÑOS
-✅ 12,345 chunks creados
-   62 chunks por documento (promedio)
+✅ 120,000 chunks creados  ← ¡30x más que antes!
+   60 chunks por documento (promedio)
 
 4️⃣  INICIALIZANDO EMBEDDINGS CON RETRY
 ✅ Embeddings de Google listos
 ```
 
-### Proceso (siguiente 20-30 minutos)
+### Proceso (siguiente 3-4 HORAS)
 ```
 5️⃣  CREANDO ÍNDICE FAISS CON PROTECCIÓN ANTI-RATE-LIMIT
 ⏳ Procesando en batches con pausas estratégicas...
+ℹ️ Pausas cada 10 batches para evitar cortes de Google
+📊 Estimación: ~2,400 batches, ~240 pausas
 
-   Batch 1/247 (50 chunks)... ✅
-   Batch 2/247 (50 chunks)... ✅
-   Batch 3/247 (50 chunks)... ✅
-   Batch 4/247 (50 chunks)... ✅
-   Batch 5/247 (50 chunks)... ✅
-   💤 Pausa de 3s (evitar rate limit)...  ← ESTO ES NORMAL
-   Batch 6/247 (50 chunks)... ✅
+   Batch 1/2400 (50 chunks)... ✅
+   Batch 2/2400 (50 chunks)... ✅
+   ...
+   Batch 10/2400 (50 chunks)... ✅
+   💤 Pausa de 2s (evitar rate limit)...  ← OPTIMIZADO (cada 10, no cada 5)
+   Batch 11/2400 (50 chunks)... ✅
    ...
 ```
 
-### Finalización (últimos 3 minutos)
+### Finalización (últimos 5 minutos)
 ```
-✅ Índice FAISS creado: 12,345 chunks
+✅ Índice FAISS creado: 120,000 chunks
 
 6️⃣  GUARDANDO ÍNDICE
 ✅ Índice guardado: faiss_index
-   Tamaño: 45.23 MB
+   Tamaño: ~450 MB (estimado con 1,973 archivos)
 
 7️⃣  VERIFICACIÓN
-✅ Índice verificado: 12,345 documentos
+✅ Índice verificado: 120,000 documentos
 
 🧪 PRUEBA DE BÚSQUEDA:
    Query: 'linaje ra tric jac bis'
