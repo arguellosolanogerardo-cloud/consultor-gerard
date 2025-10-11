@@ -5,3 +5,12 @@ maxUploadSize = 500
 
 [browser]
 gatherUsageStats = false
+
+[theme]
+# Fuerza tema oscuro permanente (ignora configuración del navegador)
+base = "dark"
+primaryColor = "#FF4B4B"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#262730"
+textColor = "#FAFAFA"
+font = "sans serif"
