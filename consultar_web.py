@@ -883,6 +883,26 @@ st.markdown("""
     -moz-animation: blink-slow 2s infinite;
     animation: blink-slow 2s infinite;
 }
+/* Ocultar placeholder cuando "PREGUNTA¡..." está oculto */
+.hide-placeholder textarea::placeholder {
+    opacity: 0 !important;
+    color: transparent !important;
+    animation: none !important;
+    -webkit-animation: none !important;
+    -moz-animation: none !important;
+}
+.hide-placeholder textarea::-webkit-input-placeholder {
+    opacity: 0 !important;
+    color: transparent !important;
+    animation: none !important;
+    -webkit-animation: none !important;
+}
+.hide-placeholder textarea::-moz-placeholder {
+    opacity: 0 !important;
+    color: transparent !important;
+    animation: none !important;
+    -moz-animation: none !important;
+}
 /* Ocultar placeholder al hacer focus */
 .stChatInput textarea:focus::placeholder {
     opacity: 0 !important;
@@ -1201,10 +1221,16 @@ if prompt_input:
                     <span style='margin-left: 10px; font-style: italic; color: #FF00FF; font-size: 1.8em; font-weight: bold; text-transform: uppercase;'>BUSCANDO...</span>
                 </div>
                 <script>
-                    // Ocultar el texto "PREGUNTA¡..." mientras se muestra "BUSCANDO..."
+                    // Ocultar el texto "PREGUNTA¡..." y el placeholder mientras se muestra "BUSCANDO..."
                     const preguntaPrompt = window.parent.document.getElementById('pregunta-prompt');
                     if (preguntaPrompt) {
                         preguntaPrompt.style.display = 'none';
+                    }
+                    
+                    // Ocultar el placeholder agregando clase
+                    const chatInput = window.parent.document.querySelector('.stChatInput');
+                    if (chatInput) {
+                        chatInput.classList.add('hide-placeholder');
                     }
                 </script>
                 """
@@ -1323,10 +1349,16 @@ if prompt_input:
                                 behavior: 'smooth'
                             });
                             
-                            // Restaurar el texto "PREGUNTA¡..." después de mostrar la respuesta
+                            // Restaurar el texto "PREGUNTA¡..." y el placeholder después de mostrar la respuesta
                             const preguntaPrompt = window.parent.document.getElementById('pregunta-prompt');
                             if (preguntaPrompt) {
                                 preguntaPrompt.style.display = 'block';
+                            }
+                            
+                            // Restaurar el placeholder removiendo clase
+                            const chatInput = window.parent.document.querySelector('.stChatInput');
+                            if (chatInput) {
+                                chatInput.classList.remove('hide-placeholder');
                             }
                         }, 300);
                     </script>
