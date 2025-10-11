@@ -991,8 +991,8 @@ if not st.session_state.user_name:
                 const viewportHeight = mainSection.clientHeight;
                 const maxScroll = scrollHeight - viewportHeight;
                 
-                // Duración total del scroll en milisegundos (20 segundos para leer todo)
-                const duration = 20000;
+                // Duración total del scroll en milisegundos (45 segundos para lectura cómoda tipo teleprompter)
+                const duration = 45000;
                 const fps = 60;
                 const frameTime = 1000 / fps;
                 const totalFrames = duration / frameTime;
@@ -1162,9 +1162,25 @@ if st.session_state.user_name:
         <span style="color: #CC0000; font-weight: bold; font-size: 3.3em; animation: blink-slow 2s infinite;">PREGUNTA¡...</span>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Script para agregar el placeholder dinámicamente solo cuando PREGUNTA está visible
+    components.html(
+        """
+        <script>
+            setTimeout(function() {
+                const chatInput = window.parent.document.querySelector('.stChatInput textarea');
+                if (chatInput && !chatInput.hasAttribute('data-placeholder-set')) {
+                    chatInput.setAttribute('placeholder', 'AQUI¡... ➪');
+                    chatInput.setAttribute('data-placeholder-set', 'true');
+                }
+            }, 100);
+        </script>
+        """,
+        height=0,
+    )
 
 # --- Input del usuario con avatares personalizados ---
-if prompt_input := st.chat_input("AQUI¡... ➪"):
+if prompt_input := st.chat_input(""):
     pass  # Procesar después
 
 if prompt_input:
@@ -1227,10 +1243,15 @@ if prompt_input:
                         preguntaPrompt.style.display = 'none';
                     }
                     
-                    // Ocultar el placeholder agregando clase
+                    // Ocultar el placeholder agregando clase Y borrando el atributo
                     const chatInput = window.parent.document.querySelector('.stChatInput');
+                    const chatTextarea = window.parent.document.querySelector('.stChatInput textarea');
                     if (chatInput) {
                         chatInput.classList.add('hide-placeholder');
+                    }
+                    if (chatTextarea) {
+                        chatTextarea.setAttribute('placeholder', '');
+                        chatTextarea.removeAttribute('data-placeholder-set');
                     }
                 </script>
                 """
@@ -1355,10 +1376,15 @@ if prompt_input:
                                 preguntaPrompt.style.display = 'block';
                             }
                             
-                            // Restaurar el placeholder removiendo clase
+                            // Restaurar el placeholder removiendo clase Y restaurando el atributo
                             const chatInput = window.parent.document.querySelector('.stChatInput');
+                            const chatTextarea = window.parent.document.querySelector('.stChatInput textarea');
                             if (chatInput) {
                                 chatInput.classList.remove('hide-placeholder');
+                            }
+                            if (chatTextarea) {
+                                chatTextarea.setAttribute('placeholder', 'AQUI¡... ➪');
+                                chatTextarea.setAttribute('data-placeholder-set', 'true');
                             }
                         }, 300);
                     </script>
