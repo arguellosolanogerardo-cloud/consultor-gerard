@@ -18,6 +18,11 @@ import requests  # Para obtener la IP y geolocalización
 import io
 import textwrap
 
+# Importar sistema de logging completo
+from interaction_logger import InteractionLogger
+from device_detector import DeviceDetector
+from geo_utils import GeoLocator
+
 # Intentar importar reportlab para generar PDFs; si no está disponible, lo detectamos y mostramos instrucciones
 try:
     from reportlab.pdfgen import canvas
@@ -165,6 +170,17 @@ def load_resources():
 # NOTA: No ejecutar load_resources() al importar el módulo para evitar inicializar
 # las librerías de Google (protobuf/GRPC) en el arranque de Streamlit. La carga
 # se hará bajo demanda cuando el usuario envíe una consulta.
+
+# --- Inicializar sistema de logging completo ---
+@st.cache_resource
+def init_logger():
+    """Inicializa el sistema de logging con detección de dispositivo y geolocalización."""
+    return InteractionLogger(
+        platform="web",
+        log_dir="logs",
+        anonymize=False,  # Guardar datos completos
+        enable_json=True  # Guardar también en formato JSON
+    )
 
 # --- Lógica de GERARD v3.01 - Actualizado ---
 prompt = ChatPromptTemplate.from_template(r"""
@@ -1267,6 +1283,20 @@ if prompt_input:
                 st.markdown(loader_html, unsafe_allow_html=True)
 
             try:
+                # Inicializar el logger
+                logger = init_logger()
+                
+                # Obtener información del dispositivo y ubicación
+                # Obtener user agent del navegador
+                user_agent = st.context.headers.get("User-Agent", "Unknown") if hasattr(st, 'context') and hasattr(st.context, 'headers') else "Unknown"
+                
+                # Iniciar el registro de la interacción
+                interaction_id = logger.start_interaction(
+                    question=prompt_input,
+                    user_name=st.session_state.user_name,
+                    user_agent=user_agent
+                )
+                
                 # Construir retrieval_chain a demanda si no existe
                 if retrieval_chain is None:
                     # Intentar cargar recursos reales; esto validará la API key y el índice
@@ -1343,7 +1373,15 @@ if prompt_input:
                     st.error(f"❌ DEBUG: answer_json es tipo {type(answer_json)}, convirtiendo a string...")
                     answer_json = json.dumps(answer_json, ensure_ascii=False) if isinstance(answer_json, (dict, list)) else str(answer_json)
                 
+                # Registro antiguo (mantener por compatibilidad)
                 save_to_log(st.session_state.user_name, prompt_input, answer_json, location)
+                
+                # Finalizar el registro de la interacción con el logger completo
+                logger.end_interaction(
+                    interaction_id=interaction_id,
+                    answer=answer_json,
+                    success=True
+                )
                 
                 match = re.search(r'\[.*\]', answer_json, re.DOTALL)
                 if not match:
@@ -1418,6 +1456,17 @@ if prompt_input:
                     pass
 
             except Exception as e:
+                # Registrar el error en el logger
+                try:
+                    logger.end_interaction(
+                        interaction_id=interaction_id,
+                        answer=f"ERROR: {str(e)}",
+                        success=False,
+                        error_message=str(e)
+                    )
+                except:
+                    pass  # Si el logger falla, no queremos romper la app
+                
                 response_placeholder.error(f"Ocurrió un error al procesar tu pregunta: {e}")
 
 
