@@ -807,9 +807,25 @@ st.markdown("""
 }
 
 /* Animación de parpadeo lento para el placeholder */
+@-webkit-keyframes blink-slow {
+    0% { opacity: 1; }
+    25% { opacity: 1; }
+    50% { opacity: 0; }
+    75% { opacity: 0; }
+    100% { opacity: 1; }
+}
+@-moz-keyframes blink-slow {
+    0% { opacity: 1; }
+    25% { opacity: 1; }
+    50% { opacity: 0; }
+    75% { opacity: 0; }
+    100% { opacity: 1; }
+}
 @keyframes blink-slow {
-    0%, 49% { opacity: 1; }
-    50%, 99% { opacity: 0; }
+    0% { opacity: 1; }
+    25% { opacity: 1; }
+    50% { opacity: 0; }
+    75% { opacity: 0; }
     100% { opacity: 1; }
 }
 
@@ -850,6 +866,18 @@ st.markdown("""
 .stChatInput textarea::placeholder {
     color: black !important;
     opacity: 1 !important;
+    -webkit-animation: blink-slow 2s infinite;
+    -moz-animation: blink-slow 2s infinite;
+    animation: blink-slow 2s infinite;
+}
+.stChatInput textarea::-webkit-input-placeholder {
+    color: black !important;
+    -webkit-animation: blink-slow 2s infinite;
+    animation: blink-slow 2s infinite;
+}
+.stChatInput textarea::-moz-placeholder {
+    color: black !important;
+    -moz-animation: blink-slow 2s infinite;
     animation: blink-slow 2s infinite;
 }
 /* Ocultar placeholder al hacer focus */
@@ -857,6 +885,8 @@ st.markdown("""
     opacity: 0 !important;
     color: transparent !important;
     animation: none !important;
+    -webkit-animation: none !important;
+    -moz-animation: none !important;
 }
 /* Asegurar que el cursor sea visible */
 .stChatInput textarea:focus {
