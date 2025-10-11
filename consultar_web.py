@@ -838,10 +838,21 @@ st.markdown("""
 .stChatInput textarea {
     background-color: white !important;
     color: black !important;
+    cursor: text !important;
 }
 .stChatInput textarea::placeholder {
     color: black !important;
     opacity: 1 !important;
+}
+/* Ocultar placeholder al hacer focus */
+.stChatInput textarea:focus::placeholder {
+    opacity: 0 !important;
+    color: transparent !important;
+}
+/* Asegurar que el cursor sea visible */
+.stChatInput textarea:focus {
+    cursor: text !important;
+    caret-color: black !important;
 }
 
 /* Fondo verde para la casilla de nombre */
