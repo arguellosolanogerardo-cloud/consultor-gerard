@@ -925,28 +925,6 @@ st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsa
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
     pass  # Procesar después
 
-# Link SALIR debajo de la casilla de preguntas (izquierda, responsive)
-st.markdown("""
-<style>
-    .link-salir-debajo a {
-        color: #FF4B4B;
-        font-size: 20px;
-        font-weight: bold;
-        text-decoration: none;
-        transition: all 0.3s ease;
-    }
-    .link-salir-debajo a:hover {
-        color: #FF6B6B;
-        text-decoration: underline;
-    }
-</style>
-<div class="link-salir-debajo" style="text-align: left; margin-top: 10px; margin-bottom: 20px; margin-left: 10px;">
-    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank">
-        🚪 SALIR
-    </a>
-</div>
-""", unsafe_allow_html=True)
-
 if prompt_input:
     if not st.session_state.user_name:
         st.markdown("""
