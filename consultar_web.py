@@ -1116,12 +1116,12 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
             except Exception as e:
                 response_placeholder.error(f"Ocurrió un error al procesar tu pregunta: {e}")
 
-# Botón SALIR al final de toda la página (responsive)
+# Link SALIR al final de toda la página (responsive)
 st.markdown("""
 <style>
     @media (max-width: 768px) {
         /* Móvil: centrado */
-        .boton-salir-final {
+        .link-salir-final {
             text-align: center !important;
             margin-top: 30px !important;
             margin-bottom: 30px !important;
@@ -1129,31 +1129,28 @@ st.markdown("""
     }
     @media (min-width: 769px) {
         /* PC: alineado a la derecha */
-        .boton-salir-final {
+        .link-salir-final {
             text-align: right !important;
             margin-top: 30px !important;
             margin-bottom: 30px !important;
             padding-right: 50px !important;
         }
     }
+    .link-salir-final a {
+        color: #FF4B4B;
+        font-size: 20px;
+        font-weight: bold;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    .link-salir-final a:hover {
+        color: #FF6B6B;
+        text-decoration: underline;
+    }
 </style>
-<div class="boton-salir-final">
-    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank" style="text-decoration: none;">
-        <button style="
-            background-color: #FF4B4B;
-            color: white;
-            border: none;
-            padding: 6px 18px;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
-        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.05)';" 
-           onmouseout="this.style.backgroundColor='#FF4B4B'; this.style.transform='scale(1)';">
-            🚪 SALIR
-        </button>
+<div class="link-salir-final">
+    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank">
+        🚪 SALIR
     </a>
 </div>
 """, unsafe_allow_html=True)
