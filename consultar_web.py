@@ -839,6 +839,18 @@ st.markdown("""
     background-color: white !important;
     color: black !important;
 }
+
+/* Fondo verde para la casilla de nombre */
+input[aria-label="Tu Nombre"] {
+    background-color: #28a745 !important;
+    color: white !important;
+    font-weight: bold !important;
+}
+div[data-testid="stTextInput"] input {
+    background-color: #28a745 !important;
+    color: white !important;
+    font-weight: bold !important;
+}
 </style>
 <div class="title-style">GERARD</div>
 """, unsafe_allow_html=True)
