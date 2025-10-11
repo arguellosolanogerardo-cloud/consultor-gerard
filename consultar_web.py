@@ -1010,8 +1010,10 @@ st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsa
 
 # --- Input del usuario con avatares personalizados ---
 # Crear placeholder dinámico basado en el nombre del usuario
-if st.session_state.user_name:
-    placeholder_text = f"{st.session_state.user_name} PREGUNTA¡..."
+# Usar get() para evitar KeyError
+user_name = st.session_state.get('user_name', '')
+if user_name:
+    placeholder_text = f"{user_name} PREGUNTA¡..."
 else:
     placeholder_text = "PREGUNTA¡..."
 
