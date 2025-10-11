@@ -255,6 +255,78 @@ def get_cleaning_pattern() -> Pattern:
 
 cleaning_pattern = get_cleaning_pattern()
 
+def hybrid_retrieval(vectorstore, query: str, k_vector: int = 100, k_keyword: int = 20):
+    """
+    Búsqueda híbrida: vectorial + keyword fallback
+    
+    1. Hace búsqueda vectorial normal (k_vector docs)
+    2. Si los términos clave no aparecen en los resultados, 
+       busca directamente en el docstore por keywords
+    3. Combina resultados únicos
+    
+    Args:
+        vectorstore: FAISS vectorstore
+        query: consulta del usuario
+        k_vector: número de docs a recuperar con búsqueda vectorial
+        k_keyword: número de docs adicionales a buscar con keywords
+    
+    Returns:
+        Lista de documentos únicos combinados
+    """
+    # 1. Búsqueda vectorial normal
+    vector_docs = vectorstore.similarity_search(query, k=k_vector)
+    
+    # 2. Detectar términos clave en la query (palabras de 3+ letras)
+    keywords = [w.lower() for w in re.findall(r'\b\w{3,}\b', query)]
+    
+    # 3. Verificar si los keywords aparecen en los resultados vectoriales
+    vector_content = " ".join(doc.page_content.lower() for doc in vector_docs)
+    missing_keywords = [kw for kw in keywords if kw not in vector_content]
+    
+    # 4. Si hay keywords faltantes, hacer búsqueda directa en el docstore
+    keyword_docs = []
+    if missing_keywords:
+        print(f"[DEBUG hybrid_retrieval] Keywords faltantes en top-{k_vector}: {missing_keywords}")
+        print(f"[DEBUG hybrid_retrieval] Iniciando búsqueda keyword en docstore...")
+        
+        docstore = vectorstore.docstore._dict
+        matches = []
+        
+        for doc_id, doc in docstore.items():
+            content_lower = doc.page_content.lower()
+            # Contar cuántos keywords faltantes aparecen en este doc
+            match_count = sum(1 for kw in missing_keywords if kw in content_lower)
+            
+            if match_count > 0:
+                matches.append((match_count, doc))
+        
+        # Ordenar por número de matches (descendente) y tomar top-k_keyword
+        matches.sort(key=lambda x: x[0], reverse=True)
+        keyword_docs = [doc for _, doc in matches[:k_keyword]]
+        
+        print(f"[DEBUG hybrid_retrieval] Encontrados {len(keyword_docs)} docs adicionales con keywords")
+    
+    # 5. Combinar resultados únicos (evitar duplicados por doc_id)
+    seen_ids = set()
+    combined_docs = []
+    
+    # Priorizar docs de keyword search (tienen los términos exactos)
+    for doc in keyword_docs:
+        doc_id = id(doc)
+        if doc_id not in seen_ids:
+            combined_docs.append(doc)
+            seen_ids.add(doc_id)
+    
+    # Agregar docs vectoriales
+    for doc in vector_docs:
+        doc_id = id(doc)
+        if doc_id not in seen_ids:
+            combined_docs.append(doc)
+            seen_ids.add(doc_id)
+    
+    print(f"[DEBUG hybrid_retrieval] Total docs combinados: {len(combined_docs)}")
+    return combined_docs
+
 def format_docs_with_metadata(docs: Iterable[Any]) -> str:
     """Formatea una secuencia de documentos recuperados y limpia su contenido.
     
@@ -902,24 +974,24 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
                         print(f"[ERROR] load_resources falló: {e}")
                         response_placeholder.error(f"No fue posible inicializar los recursos: {e}")
                         raise
-                    # CRÍTICO: Aumentar k=75 para recuperar MÁS documentos con chunks pequeños (300)
-                    # Con 193K chunks pequeños, necesitamos más contexto para recall completo
-                    retriever = vs.as_retriever(search_kwargs={"k": 75})
-                    print(f"[DEBUG] Retriever creado con k=75 documentos")
+                    
+                    # BÚSQUEDA HÍBRIDA: vectorial + keyword fallback
+                    # Usar lambda para pasar el vectorstore a hybrid_retrieval
+                    def hybrid_retriever_func(query: str):
+                        return hybrid_retrieval(vs, query, k_vector=100, k_keyword=30)
+                    
+                    print(f"[DEBUG] Retriever híbrido creado (k_vector=100, k_keyword=30)")
 
                     # Si el LLM no se pudo inicializar, usamos un FakeChain que sólo regresa documentos
                     if llm_loaded is None:
                         class FakeChain:
-                            def __init__(self, retriever):
-                                self.retriever = retriever
+                            def __init__(self, retriever_func):
+                                self.retriever_func = retriever_func
 
                             def invoke(self, payload):
                                 query = payload if isinstance(payload, str) else payload.get('input', '')
-                                # obtener documentos relevantes (compatibilidad con diferentes retrievers)
-                                try:
-                                    docs = self.retriever.get_relevant_documents(query)
-                                except Exception:
-                                    docs = self.retriever(query)
+                                # obtener documentos relevantes usando búsqueda híbrida
+                                docs = self.retriever_func(query)
 
                                 items = []
                                 for d in list(docs)[:3]:
@@ -930,12 +1002,12 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
                                     items = [{"type": "normal", "content": "No se encontraron documentos relevantes en el índice."}]
                                 return json.dumps(items, ensure_ascii=False)
 
-                        retrieval_chain = FakeChain(retriever)
+                        retrieval_chain = FakeChain(hybrid_retriever_func)
                     else:
-                        # Reconstruir retrieval_chain con los recursos cargados
+                        # Reconstruir retrieval_chain con búsqueda híbrida
                         retrieval_chain = (
                             {
-                                "context": (lambda x: x["input"]) | retriever | format_docs_with_metadata,
+                                "context": (lambda x: x["input"]) | RunnableLambda(hybrid_retriever_func) | format_docs_with_metadata,
                                 "input": lambda x: x["input"],
                                 "date": lambda x: x.get("date", ""),
                                 "session_hash": lambda x: x.get("session_hash", "")
