@@ -679,6 +679,40 @@ hide_streamlit_style = """
         padding-top: 1rem;
     }
     </style>
+    
+    <script>
+    // Función para ocultar iconos del footer inferior derecho
+    function hideFooterIcons() {
+        // Ocultar todos los elementos en la esquina inferior derecha
+        const selectors = [
+            'footer',
+            '[data-testid="stStatusWidget"]',
+            '[class*="viewerBadge"]',
+            '[class*="styles_viewerBadge"]',
+            'button[title*="Manage"]',
+            'button[title*="manage"]',
+            '.stApp footer',
+            '.main footer'
+        ];
+        
+        selectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+            });
+        });
+    }
+    
+    // Ejecutar cuando la página cargue
+    document.addEventListener('DOMContentLoaded', hideFooterIcons);
+    
+    // Ejecutar repetidamente para capturar elementos cargados dinámicamente
+    setInterval(hideFooterIcons, 500);
+    
+    // Ejecutar inmediatamente
+    hideFooterIcons();
+    </script>
 """
 
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
