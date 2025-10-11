@@ -662,16 +662,20 @@ st.set_page_config(page_title="GERARD", layout="centered")
 hide_streamlit_style = """
     <style>
     /* Ocultar el menú de hamburguesa y header */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
+    #MainMenu {visibility: hidden !important;}
+    header {visibility: hidden !important;}
     
-    /* Ocultar el footer "Made with Streamlit" */
-    footer {visibility: hidden;}
+    /* Ocultar el footer "Made with Streamlit" - múltiples selectores */
+    footer {visibility: hidden !important;}
+    footer, .reportview-container footer {visibility: hidden !important;}
+    .viewerBadge_container__1QSob {display: none !important;}
+    .styles_viewerBadge__1yB5_ {display: none !important;}
     
-    /* Opcional: Ocultar el botón de deploy */
-    .stDeployButton {display:none;}
+    /* Ocultar botones de Streamlit */
+    .stDeployButton {display: none !important;}
+    button[kind="header"] {display: none !important;}
     
-    /* Opcional: Reducir el padding superior */
+    /* Reducir el padding superior */
     .block-container {
         padding-top: 1rem;
     }
