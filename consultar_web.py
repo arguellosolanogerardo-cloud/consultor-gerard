@@ -665,25 +665,14 @@ hide_streamlit_style = """
     #MainMenu {visibility: hidden !important;}
     header {visibility: hidden !important;}
     
-    /* Ocultar TODOS los elementos del footer - múltiples selectores agresivos */
-    footer {visibility: hidden !important; display: none !important;}
-    footer, .reportview-container footer {visibility: hidden !important; display: none !important;}
+    /* Ocultar el footer "Made with Streamlit" */
+    footer {visibility: hidden !important;}
     .viewerBadge_container__1QSob {display: none !important;}
     .styles_viewerBadge__1yB5_ {display: none !important;}
-    
-    /* Ocultar CUALQUIER elemento en la esquina inferior derecha */
-    [data-testid="stBottomBlockContainer"] {display: none !important;}
-    [data-testid="stStatusWidget"] {display: none !important;}
-    div[data-testid="stDecoration"] {display: none !important;}
     
     /* Ocultar badges y botones de Streamlit */
     .stDeployButton {display: none !important;}
     button[kind="header"] {display: none !important;}
-    .stApp > footer {display: none !important;}
-    
-    /* Ocultar iconos desplegables del footer */
-    .styles_terminalButton__3vPXb {display: none !important;}
-    button[title*="Manage app"] {display: none !important;}
     
     /* Reducir el padding superior */
     .block-container {
