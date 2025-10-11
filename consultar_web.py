@@ -845,9 +845,9 @@ if 'messages' not in st.session_state:
 if not st.session_state.user_name:
     st.markdown("""
     <p class="intro-text" style="font-size:1.8em; line-height:1.05;">
-    Asistente especializado en los mensajes y meditaciones de los 9 Maestros: <strong>ALANISO, AXEL, ALAN, AZEN, AVIATAR, ALADIM, ADIEL, AZOES Y ALIESTRO</strong> con
+    Asistente especializado en los mensajes y meditaciones de los 9 Maestros: <strong>ALANISO, AXEL, ALAN, AZEN, AVIATAR, ALADIM, ADIEL, AZOES Y ALIESTRO</strong> junto a
     <br>
-    Las tres grandes energias el Padre Amor, la Gran Madre y el Gran Maestro Jesus.
+    Las tres grandes energias: <strong>EL PADRE AMOR, LA GRAN MADRE Y EL GRAN MAESTRO JESUS.</strong>
     </p>
     <p style="text-align:center; margin-top:12px; font-size:1.25em; text-transform:uppercase; font-weight:bold;">
     TE AYUDARE A ENCONTRAR CON PRECISIÓN EL MINUTO Y SEGUNDO EXACTO EN CADA AUDIO O ENSEÑANZAS QUE YA HAYAS ESCUCHADO ANTERIORMENTE PERO QUE EN EL MOMENTO NO RECUERDAS EXACTAMENTE.
