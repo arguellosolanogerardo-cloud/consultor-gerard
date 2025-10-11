@@ -1003,7 +1003,7 @@ if st.session_state.messages:
 # Centrar el GIF y dejarlo en tamaño natural para que se anime
 col1, col2, col3 = st.columns([2, 1, 2])
 with col2:
-    st.image("assets/pregunta.gif")  # SIN width para mantener animación
+    st.image("assets/pregunta2.gif")  # SIN width para mantener animación
 
 # Margen negativo MUY agresivo para pegarlo casi a la casilla
 st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsafe_allow_html=True)
