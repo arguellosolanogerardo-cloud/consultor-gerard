@@ -839,6 +839,10 @@ st.markdown("""
     background-color: white !important;
     color: black !important;
 }
+.stChatInput textarea::placeholder {
+    color: black !important;
+    opacity: 1 !important;
+}
 
 /* Fondo verde para la casilla de nombre */
 input[aria-label="Tu Nombre"] {
@@ -1005,7 +1009,13 @@ with col2:
 st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsafe_allow_html=True)
 
 # --- Input del usuario con avatares personalizados ---
-if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
+# Crear placeholder dinámico basado en el nombre del usuario
+if st.session_state.user_name:
+    placeholder_text = f"{st.session_state.user_name} ESPERANDO TU PREGUNTA..."
+else:
+    placeholder_text = "ESPERANDO TU PREGUNTA..."
+
+if prompt_input := st.chat_input(placeholder_text):
     pass  # Procesar después
 
 if prompt_input:
