@@ -786,7 +786,7 @@ if 'messages' not in st.session_state:
 if not st.session_state.user_name:
     st.markdown("""
     <p class="intro-text" style="font-size:1.8em; line-height:1.05;">
-    Hola, soy GERARD tu asistente especializado en los mensajes y meditaciones de los 9 Maestros: <strong>ALANISO, AXEL, ALAN, AZEN, AVIATAR, ALADIM, ADIEL, AZOES Y ALIESTRO</strong>.
+    Asistente especializado en los mensajes y meditaciones de los 9 Maestros: <strong>ALANISO, AXEL, ALAN, AZEN, AVIATAR, ALADIM, ADIEL, AZOES Y ALIESTRO</strong> con
     <br>
     Las tres grandes energias el Padre Amor, la Gran Madre y el Gran Maestro Jesus.
     </p>
