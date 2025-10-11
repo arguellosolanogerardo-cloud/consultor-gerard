@@ -1074,33 +1074,40 @@ with st.sidebar:
     st.markdown("---")
     with st.expander("❓ **Cómo Hacer Preguntas Efectivas**"):
         st.markdown("""
-        ### 📝 Ejemplos de Preguntas:
+        ### 🎯 CATEGORÍAS DE BÚSQUEDA
         
-        **Búsquedas específicas:**
-        - ¿Qué dice Alaniso sobre el amor?
-        - ¿Cuál es el mensaje de Axel sobre la sanación?
-        - ¿Qué enseñanzas hay sobre la reencarnación?
+        **1️⃣ Por Tema Específico**
+        - Evacuación, naves, sanación, profecías
+        - Ejemplo: *"¿Qué enseñanzas hay sobre la evacuación?"*
         
-        **Búsquedas por tema:**
-        - Explícame sobre el perdón
-        - ¿Qué dice sobre los chakras?
-        - Información sobre los Seres de Luz
+        **2️⃣ Por Maestro**
+        - ALANISO, AXEL, ADIEL, AZEN, AVIATAR, etc.
+        - Ejemplo: *"¿Qué mensajes dio el Maestro ALANISO?"*
         
-        **Búsquedas específicas de audio:**
-        - ¿En qué audio hablan sobre la meditación?
-        - ¿Dónde menciona la palabra "energía"?
+        **3️⃣ Por Concepto**
+        - Gran Madre, ejercito de luz, túneles dimensionales
+        - Ejemplo: *"Explícame el concepto de la Gran Madre"*
         
-        ### ✨ Tips para Mejores Resultados:
+        **4️⃣ Por Número**
+        - Meditaciones (36-1044), Mensajes (606-1010)
+        - Ejemplo: *"¿De qué trata la Meditación 107?"*
         
-        ✅ **Sé específico** - Menciona maestro o tema concreto
-        ✅ **Pregunta natural** - Escribe como hablarías
-        ✅ **Una idea a la vez** - Preguntas claras dan respuestas claras
+        ### ✨ Tips Rápidos
         
-        ### 🎯 Qué Obtendrás:
+        ✅ **Sé específico** - Menciona maestro o tema concreto  
+        ✅ **Usa palabras clave** - Evacuación, sanación, naves  
+        ✅ **Combina elementos** - "Maestro ALANISO + evacuación"  
+        ✅ **Haz seguimiento** - GERARD recuerda la conversación  
         
-        - **Respuestas con fuente** - Cada respuesta incluye el archivo exacto
-        - **Timestamps precisos** - Hora y minuto exacto (HH:MM:SS)
-        - **Contexto completo** - Fragmentos relevantes de las enseñanzas
+        ### � Obtendrás
+        
+        📍 **Fuente exacta** del archivo .srt  
+        ⏱️ **Timestamp preciso** (HH:MM:SS)  
+        📖 **Contexto completo** de la enseñanza  
+        
+        ---
+        
+        📚 **[Ver Guía Completa](https://github.com/arguellosolanogerardo-cloud/consultor-gerard/blob/main/GUIA_MODELOS_PREGUNTA_GERARD.md)** con ejemplos detallados
         """)
 
 # ============================================================================
