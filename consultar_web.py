@@ -806,6 +806,13 @@ st.markdown("""
     animation: pulse 1.2s infinite;
 }
 
+/* Animación de parpadeo lento para el placeholder */
+@keyframes blink-slow {
+    0%, 49% { opacity: 1; }
+    50%, 99% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
 /* Media queries para móviles (mejor legibilidad en Android/iOS antiguos y modernos) */
 @media (max-width: 1200px) {
     .title-style { font-size: 5.2em; }
@@ -843,11 +850,13 @@ st.markdown("""
 .stChatInput textarea::placeholder {
     color: black !important;
     opacity: 1 !important;
+    animation: blink-slow 2s infinite;
 }
 /* Ocultar placeholder al hacer focus */
 .stChatInput textarea:focus::placeholder {
     opacity: 0 !important;
     color: transparent !important;
+    animation: none !important;
 }
 /* Asegurar que el cursor sea visible */
 .stChatInput textarea:focus {
