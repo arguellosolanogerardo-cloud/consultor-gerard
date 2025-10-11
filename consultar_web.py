@@ -13,6 +13,7 @@ from datetime import datetime
 import uuid
 from typing import Any, Iterable, List, Pattern
 import streamlit as st
+import streamlit.components.v1 as components
 import requests  # Para obtener la IP y geolocalización
 import io
 import textwrap
@@ -950,19 +951,18 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
         with st.chat_message("assistant", avatar=assistant_avatar):
             response_placeholder = st.empty()
             
-            # Auto-scroll hacia abajo para mostrar "Buscando..." en pantalla
-            scroll_script = """
-            <script>
-                // Esperar un momento para que se renderice el contenido
-                setTimeout(function() {
-                    window.scrollTo({
-                        top: document.body.scrollHeight,
+            # Auto-scroll hacia abajo usando components.html (más confiable que st.markdown)
+            components.html(
+                """
+                <script>
+                    window.parent.document.querySelector('section.main').scrollTo({
+                        top: window.parent.document.querySelector('section.main').scrollHeight,
                         behavior: 'smooth'
                     });
-                }, 100);
-            </script>
-            """
-            st.markdown(scroll_script, unsafe_allow_html=True)
+                </script>
+                """,
+                height=0,
+            )
             
             # Contenedor temporal para mostrar GIF + texto de carga
             with response_placeholder.container():
@@ -1082,18 +1082,20 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
                 response_placeholder.markdown(response_html, unsafe_allow_html=True)
                 st.session_state.messages.append({"role": "assistant", "content": response_html})
                 
-                # Auto-scroll después de mostrar la respuesta completa
-                scroll_to_bottom = """
-                <script>
-                    setTimeout(function() {
-                        window.scrollTo({
-                            top: document.body.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    }, 200);
-                </script>
-                """
-                st.markdown(scroll_to_bottom, unsafe_allow_html=True)
+                # Auto-scroll después de mostrar la respuesta completa (más confiable con components.html)
+                components.html(
+                    """
+                    <script>
+                        setTimeout(function() {
+                            window.parent.document.querySelector('section.main').scrollTo({
+                                top: window.parent.document.querySelector('section.main').scrollHeight,
+                                behavior: 'smooth'
+                            });
+                        }, 300);
+                    </script>
+                    """,
+                    height=0,
+                )
                 
                 # Forzar rerun para mostrar botones inmediatamente después de la primera respuesta
                 st.rerun()
