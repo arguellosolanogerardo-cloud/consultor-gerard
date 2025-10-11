@@ -1096,7 +1096,7 @@ if prompt_input:
                 loader_html = """
                 <div class="loader-container" style="text-align: center; margin-top: -15px;">
                     <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-                    <span style='margin-left: 10px; font-style: italic; color: #888;'>Buscando...</span>
+                    <span style='margin-left: 10px; font-style: italic; color: #FF00FF; font-size: 1.8em; font-weight: bold; text-transform: uppercase;'>BUSCANDO...</span>
                 </div>
                 """
                 st.markdown(loader_html, unsafe_allow_html=True)
