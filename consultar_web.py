@@ -925,6 +925,32 @@ st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsa
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
+    pass  # Procesar después
+
+# Botón SALIR debajo del chat_input, alineado a la derecha
+st.markdown("""
+<div style="text-align: right; margin-top: -60px; margin-bottom: 10px; margin-right: 10px;">
+    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank" style="text-decoration: none;">
+        <button style="
+            background-color: #FF4B4B;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.05)';" 
+           onmouseout="this.style.backgroundColor='#FF4B4B'; this.style.transform='scale(1)';">
+            🚪 SALIR
+        </button>
+    </a>
+</div>
+""", unsafe_allow_html=True)
+
+if prompt_input:
     if not st.session_state.user_name:
         st.markdown("""
         <div style="text-align: center; margin: 20px 0;">
