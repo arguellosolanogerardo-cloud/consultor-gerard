@@ -1080,12 +1080,13 @@ with col2:
 # Margen negativo MUY agresivo para pegarlo casi a la casilla
 st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsafe_allow_html=True)
 
-# Texto "PREGUNTA¡..." animado encima de la casilla
-st.markdown("""
-<div id="pregunta-prompt" style="text-align: left; margin-left: 15px; margin-bottom: 5px;">
-    <span style="color: #CC0000; font-weight: bold; font-size: 3.3em; animation: blink-slow 2s infinite;">PREGUNTA¡...</span>
-</div>
-""", unsafe_allow_html=True)
+# Texto "PREGUNTA¡..." animado encima de la casilla (solo si el usuario ya ingresó su nombre)
+if st.session_state.user_name:
+    st.markdown("""
+    <div id="pregunta-prompt" style="text-align: left; margin-left: 15px; margin-bottom: 5px;">
+        <span style="color: #CC0000; font-weight: bold; font-size: 3.3em; animation: blink-slow 2s infinite;">PREGUNTA¡...</span>
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input(""):
