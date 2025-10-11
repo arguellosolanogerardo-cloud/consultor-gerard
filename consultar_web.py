@@ -925,51 +925,6 @@ st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsa
 
 # --- Input del usuario con avatares personalizados ---
 if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
-    pass  # Procesar después
-
-# Botón SALIR debajo de la casilla de preguntas (responsive)
-st.markdown("""
-<style>
-    @media (max-width: 768px) {
-        /* Móvil: centrado y con margen superior */
-        .boton-salir-container {
-            text-align: center !important;
-            margin-top: 15px !important;
-            margin-bottom: 30px !important;
-        }
-    }
-    @media (min-width: 769px) {
-        /* PC: alineado a la derecha con menos margen */
-        .boton-salir-container {
-            text-align: right !important;
-            margin-top: 10px !important;
-            margin-bottom: 20px !important;
-            padding-right: 50px !important;
-        }
-    }
-</style>
-<div class="boton-salir-container">
-    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank" style="text-decoration: none;">
-        <button style="
-            background-color: #FF4B4B;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
-            transition: all 0.3s ease;
-        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.1)';" 
-           onmouseout="this.style.backgroundColor='#FF4B4B'; this.style.transform='scale(1)';">
-            🚪 SALIR
-        </button>
-    </a>
-</div>
-""", unsafe_allow_html=True)
-
-if prompt_input:
     if not st.session_state.user_name:
         st.markdown("""
         <div style="text-align: center; margin: 20px 0;">
@@ -1160,5 +1115,47 @@ if prompt_input:
 
             except Exception as e:
                 response_placeholder.error(f"Ocurrió un error al procesar tu pregunta: {e}")
+
+# Botón SALIR al final de toda la página (responsive)
+st.markdown("""
+<style>
+    @media (max-width: 768px) {
+        /* Móvil: centrado */
+        .boton-salir-final {
+            text-align: center !important;
+            margin-top: 30px !important;
+            margin-bottom: 30px !important;
+        }
+    }
+    @media (min-width: 769px) {
+        /* PC: alineado a la derecha */
+        .boton-salir-final {
+            text-align: right !important;
+            margin-top: 30px !important;
+            margin-bottom: 30px !important;
+            padding-right: 50px !important;
+        }
+    }
+</style>
+<div class="boton-salir-final">
+    <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank" style="text-decoration: none;">
+        <button style="
+            background-color: #FF4B4B;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        " onmouseover="this.style.backgroundColor='#FF6B6B'; this.style.transform='scale(1.1)';" 
+           onmouseout="this.style.backgroundColor='#FF4B4B'; this.style.transform='scale(1)';">
+            🚪 SALIR
+        </button>
+    </a>
+</div>
+""", unsafe_allow_html=True)
 
 
