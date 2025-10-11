@@ -827,6 +827,18 @@ st.markdown("""
     .intro-text { font-size: 0.95em; }
     .green-pulse { font-size: 1.0em; }
 }
+
+/* Fondo blanco para la casilla de preguntas */
+.stChatInput {
+    background-color: white !important;
+}
+.stChatInput > div {
+    background-color: white !important;
+}
+.stChatInput textarea {
+    background-color: white !important;
+    color: black !important;
+}
 </style>
 <div class="title-style">GERARD</div>
 """, unsafe_allow_html=True)
