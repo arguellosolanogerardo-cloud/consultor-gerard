@@ -232,6 +232,10 @@ def format_docs_with_metadata(docs):
     for doc in docs:
         source_filename = os.path.basename(doc.metadata.get('source', 'Fuente desconocida'))
         
+        # Eliminar extensión .srt para fuentes más limpias
+        if source_filename.endswith('.srt'):
+            source_filename = source_filename[:-4]
+        
         # 1. Limpieza de textos no deseados
         cleaned_content = cleaning_pattern.sub('', doc.page_content)
 
