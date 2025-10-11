@@ -23,6 +23,14 @@ from interaction_logger import InteractionLogger
 from device_detector import DeviceDetector
 from geo_utils import GeoLocator
 
+# Importar Google Sheets Logger (opcional, solo si está configurado)
+try:
+    from google_sheets_logger import create_sheets_logger
+    GOOGLE_SHEETS_AVAILABLE = True
+except ImportError:
+    GOOGLE_SHEETS_AVAILABLE = False
+    print("⚠️  Google Sheets Logger no disponible. Instala: pip install gspread oauth2client")
+
 # Intentar importar reportlab para generar PDFs; si no está disponible, lo detectamos y mostramos instrucciones
 try:
     from reportlab.pdfgen import canvas
@@ -181,6 +189,14 @@ def init_logger():
         anonymize=False,  # Guardar datos completos
         enable_json=True  # Guardar también en formato JSON
     )
+
+# --- Inicializar Google Sheets Logger (si está disponible) ---
+@st.cache_resource
+def init_sheets_logger():
+    """Inicializa el logger de Google Sheets si está configurado."""
+    if GOOGLE_SHEETS_AVAILABLE:
+        return create_sheets_logger()
+    return None
 
 # --- Lógica de GERARD v3.01 - Actualizado ---
 prompt = ChatPromptTemplate.from_template(r"""
@@ -1289,6 +1305,9 @@ if prompt_input:
                 # Inicializar el logger
                 logger = init_logger()
                 
+                # Inicializar Google Sheets Logger
+                sheets_logger = init_sheets_logger()
+                
                 # Obtener información del dispositivo y ubicación
                 # Obtener user agent del navegador
                 user_agent = st.context.headers.get("User-Agent", "Unknown") if hasattr(st, 'context') and hasattr(st.context, 'headers') else "Unknown"
@@ -1384,6 +1403,31 @@ if prompt_input:
                     session_id=interaction_id,
                     status="success"
                 )
+                
+                # Registrar en Google Sheets si está disponible
+                if sheets_logger:
+                    # Obtener información del dispositivo y ubicación para Google Sheets
+                    device_detector = DeviceDetector()
+                    device_info = device_detector.detect_from_web(user_agent)
+                    
+                    geo_locator = GeoLocator()
+                    location_info = geo_locator.get_location()
+                    
+                    # Calcular tiempo de respuesta
+                    timing_info = {
+                        "total_time": (datetime.now() - datetime.fromisoformat(ts.replace(' ', 'T'))).total_seconds()
+                    }
+                    
+                    sheets_logger.log_interaction(
+                        interaction_id=interaction_id,
+                        user=st.session_state.user_name,
+                        question=prompt_input,
+                        answer=answer_json,
+                        device_info=device_info,
+                        location_info=location_info,
+                        timing=timing_info,
+                        success=True
+                    )
                 
                 match = re.search(r'\[.*\]', answer_json, re.DOTALL)
                 if not match:
