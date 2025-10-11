@@ -210,24 +210,24 @@ ________________________________________
 � INSTRUCCIÓN CRÍTICA DE FORMATO
 CADA FRASE O PÁRRAFO de respuesta DEBE ir seguido inmediatamente de su cita de fuente en PARÉNTESIS.
 El texto de la cita DEBE ir en COLOR MAGENTA.
-Formato: [Tu respuesta aquí] (Fuente: TITULO_ARCHIVO.srt, Timestamp: HH:MM:SS)
+Formato: [Tu respuesta aquí] (Fuente: TITULO_ARCHIVO, Timestamp: HH:MM:SS)
 
 EJEMPLO:
-"El amor es la fuerza más poderosa del universo (Fuente: MEDITACION_42_EL_AMOR_DIVINO.srt, Timestamp: 00:15:32)"
+"El amor es la fuerza más poderosa del universo (Fuente: MEDITACION_42_EL_AMOR_DIVINO, Timestamp: 00:15:32)"
 
 🚨 FORMATO DE SALIDA OBLIGATORIO (JSON)
 CRÍTICO: Tu respuesta DEBE ser un array JSON válido con esta estructura exacta:
 
 [
-  {{"type": "normal", "content": "Texto con su cita (Fuente: archivo.srt, Timestamp: HH:MM:SS)"}},
-  {{"type": "emphasis", "content": "Texto enfatizado con su cita (Fuente: archivo.srt, Timestamp: HH:MM:SS)"}},
-  {{"type": "normal", "content": "Más texto con cita (Fuente: archivo.srt, Timestamp: HH:MM:SS)"}}
+  {{"type": "normal", "content": "Texto con su cita (Fuente: archivo, Timestamp: HH:MM:SS)"}},
+  {{"type": "emphasis", "content": "Texto enfatizado con su cita (Fuente: archivo, Timestamp: HH:MM:SS)"}},
+  {{"type": "normal", "content": "Más texto con cita (Fuente: archivo, Timestamp: HH:MM:SS)"}}
 ]
 
 REGLAS:
 - type: puede ser "normal" o "emphasis"
 - content: string que SIEMPRE incluye la cita de fuente al final entre paréntesis
-- Formato de cita: (Fuente: NOMBRE_EXACTO_ARCHIVO.srt, Timestamp: HH:MM:SS)
+- Formato de cita: (Fuente: NOMBRE_EXACTO_archivo, Timestamp: HH:MM:SS)
 - NO agregues texto fuera del array JSON
 - NO uses markdown, solo el array JSON puro
 - NUNCA omitas la cita de fuente
@@ -344,6 +344,9 @@ def format_docs_with_metadata(docs: Iterable[Any]) -> str:
         for text_to_remove in texts_to_remove_from_filename:
             source_filename = source_filename.replace(text_to_remove, "")
         source_filename = re.sub(r'\s+', ' ', source_filename).strip()
+        # Eliminar extensión .srt para fuentes más limpias
+        if source_filename.endswith('.srt'):
+            source_filename = source_filename[:-4]
         cleaned_content = cleaning_pattern.sub('', doc.page_content)
         cleaned_content = re.sub(r'(\d{2}:\d{2}:\d{2}),\d{3}', r'\1', cleaned_content)
         cleaned_content = "\n".join(line for line in cleaned_content.split('\n') if line.strip())
@@ -1083,4 +1086,5 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
 
             except Exception as e:
                 response_placeholder.error(f"Ocurrió un error al procesar tu pregunta: {e}")
+
 
