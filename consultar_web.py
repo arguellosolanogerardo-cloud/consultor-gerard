@@ -1069,6 +1069,39 @@ with st.sidebar:
     else:
         st.info("💡 **Inicia una conversación** para ver los botones de exportación aquí")
         st.caption("Los botones aparecerán automáticamente después de tu primera pregunta")
+    
+    # Sección de ayuda expandible
+    st.markdown("---")
+    with st.expander("❓ **Cómo Hacer Preguntas Efectivas**"):
+        st.markdown("""
+        ### 📝 Ejemplos de Preguntas:
+        
+        **Búsquedas específicas:**
+        - ¿Qué dice Alaniso sobre el amor?
+        - ¿Cuál es el mensaje de Axel sobre la sanación?
+        - ¿Qué enseñanzas hay sobre la reencarnación?
+        
+        **Búsquedas por tema:**
+        - Explícame sobre el perdón
+        - ¿Qué dice sobre los chakras?
+        - Información sobre los Seres de Luz
+        
+        **Búsquedas específicas de audio:**
+        - ¿En qué audio hablan sobre la meditación?
+        - ¿Dónde menciona la palabra "energía"?
+        
+        ### ✨ Tips para Mejores Resultados:
+        
+        ✅ **Sé específico** - Menciona maestro o tema concreto
+        ✅ **Pregunta natural** - Escribe como hablarías
+        ✅ **Una idea a la vez** - Preguntas claras dan respuestas claras
+        
+        ### 🎯 Qué Obtendrás:
+        
+        - **Respuestas con fuente** - Cada respuesta incluye el archivo exacto
+        - **Timestamps precisos** - Hora y minuto exacto (HH:MM:SS)
+        - **Contexto completo** - Fragmentos relevantes de las enseñanzas
+        """)
 
 # ============================================================================
 
