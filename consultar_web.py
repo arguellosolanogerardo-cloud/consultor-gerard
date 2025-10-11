@@ -1008,19 +1008,8 @@ with col2:
 # Margen negativo MUY agresivo para pegarlo casi a la casilla
 st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsafe_allow_html=True)
 
-# Mostrar nombre de usuario encima de la casilla de preguntas
-user_name = st.session_state.get('user_name', '')
-if user_name:
-    st.markdown(f"""
-    <div style="text-align: left; margin-bottom: 5px; margin-left: 10px;">
-        <span style="color: #28a745; font-weight: bold; font-size: 1.2em;">
-            {user_name} PREGUNTA¡...
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
-
 # --- Input del usuario con avatares personalizados ---
-if prompt_input := st.chat_input("Escribe aquí..."):
+if prompt_input := st.chat_input("PREGUNTA¡..."):
     pass  # Procesar después
 
 if prompt_input:
