@@ -1006,7 +1006,10 @@ if 'messages' not in st.session_state:
 
 # ==================== SIDEBAR CON BOTONES DE EXPORTACIÓN ====================
 with st.sidebar:
+    # Logo/Título del sidebar
+    st.markdown("## 🔮 GERARD")
     st.markdown("### 📥 Exportar Conversación")
+    st.markdown("---")
     
     if st.session_state.messages:
         conversation_text = get_conversation_text()
@@ -1062,9 +1065,10 @@ with st.sidebar:
             st.info("⚠️ PDF no disponible")
         
         st.markdown("---")
-        st.caption(f"💬 {len(st.session_state.messages)} mensajes en la conversación")
+        st.success(f"💬 **{len(st.session_state.messages)} mensajes** en la conversación")
     else:
-        st.info("💡 Inicia una conversación para exportar")
+        st.info("💡 **Inicia una conversación** para ver los botones de exportación aquí")
+        st.caption("Los botones aparecerán automáticamente después de tu primera pregunta")
 
 # ============================================================================
 
