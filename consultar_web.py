@@ -1381,9 +1381,8 @@ if prompt_input:
                 
                 # Finalizar el registro de la interacción con el logger completo
                 logger.end_interaction(
-                    interaction_id=interaction_id,
-                    answer=answer_json,
-                    success=True
+                    session_id=interaction_id,
+                    status="success"
                 )
                 
                 match = re.search(r'\[.*\]', answer_json, re.DOTALL)
@@ -1462,10 +1461,9 @@ if prompt_input:
                 # Registrar el error en el logger
                 try:
                     logger.end_interaction(
-                        interaction_id=interaction_id,
-                        answer=f"ERROR: {str(e)}",
-                        success=False,
-                        error_message=str(e)
+                        session_id=interaction_id,
+                        status="error",
+                        error=str(e)
                     )
                 except:
                     pass  # Si el logger falla, no queremos romper la app
