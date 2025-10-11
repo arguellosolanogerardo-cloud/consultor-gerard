@@ -1083,7 +1083,7 @@ st.markdown('<div style="margin-top: -50px; margin-bottom: -20px;"></div>', unsa
 # Texto "PREGUNTA¡..." animado encima de la casilla
 st.markdown("""
 <div style="text-align: left; margin-left: 15px; margin-bottom: 5px;">
-    <span style="color: black; font-weight: bold; font-size: 1.1em; animation: blink-slow 2s infinite;">PREGUNTA¡...</span>
+    <span style="color: #CC0000; font-weight: bold; font-size: 3.3em; animation: blink-slow 2s infinite;">PREGUNTA¡...</span>
 </div>
 """, unsafe_allow_html=True)
 
