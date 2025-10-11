@@ -29,7 +29,7 @@ try:
     GOOGLE_SHEETS_AVAILABLE = True
 except ImportError:
     GOOGLE_SHEETS_AVAILABLE = False
-    print("⚠️  Google Sheets Logger no disponible. Instala: pip install gspread oauth2client")
+    print("[!] Google Sheets Logger no disponible. Instala: pip install gspread oauth2client")
 
 # Intentar importar reportlab para generar PDFs; si no está disponible, lo detectamos y mostramos instrucciones
 try:
@@ -1081,8 +1081,10 @@ if not st.session_state.user_name:
                 confirm_options.append(opt)
 
         chosen = st.selectbox("Detecté el género: seleccione para confirmar o corregir", options=confirm_options, index=0, key="gender_confirm")
-        st.session_state.user_gender = chosen
-        st.rerun()
+        # Solo hacer rerun si realmente cambió el género
+        if st.session_state.get('user_gender') != chosen:
+            st.session_state.user_gender = chosen
+            st.rerun()
 else:
     # Construir bienvenida flexible según género seleccionado
     gender = st.session_state.get('user_gender', 'No especificar')
@@ -1485,8 +1487,9 @@ if prompt_input:
                     height=0,
                 )
                 
-                # Forzar rerun para mostrar botones inmediatamente después de la primera respuesta
-                st.rerun()
+                # NOTA: st.rerun() aquí causaba que los botones de descarga no aparecieran
+                # porque recargaba la página antes de llegar a renderizar los botones
+                # st.rerun()
 
                 # --- Ofrecer descarga del último intercambio (pregunta + respuesta) ---
                 try:
