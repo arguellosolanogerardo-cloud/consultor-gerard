@@ -864,19 +864,22 @@ st.markdown("""
     cursor: text !important;
 }
 .stChatInput textarea::placeholder {
-    color: black !important;
+    color: #CC0000 !important;
+    font-weight: bold !important;
     opacity: 1 !important;
     -webkit-animation: blink-slow 2s infinite;
     -moz-animation: blink-slow 2s infinite;
     animation: blink-slow 2s infinite;
 }
 .stChatInput textarea::-webkit-input-placeholder {
-    color: black !important;
+    color: #CC0000 !important;
+    font-weight: bold !important;
     -webkit-animation: blink-slow 2s infinite;
     animation: blink-slow 2s infinite;
 }
 .stChatInput textarea::-moz-placeholder {
-    color: black !important;
+    color: #CC0000 !important;
+    font-weight: bold !important;
     -moz-animation: blink-slow 2s infinite;
     animation: blink-slow 2s infinite;
 }
@@ -1089,7 +1092,7 @@ if st.session_state.user_name:
     """, unsafe_allow_html=True)
 
 # --- Input del usuario con avatares personalizados ---
-if prompt_input := st.chat_input(""):
+if prompt_input := st.chat_input("AQUI¡... ➪"):
     pass  # Procesar después
 
 if prompt_input:
