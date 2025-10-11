@@ -1283,6 +1283,9 @@ if prompt_input:
                 st.markdown(loader_html, unsafe_allow_html=True)
 
             try:
+                # Obtener ubicación del usuario
+                location = get_user_location()
+                
                 # Inicializar el logger
                 logger = init_logger()
                 
@@ -1292,9 +1295,9 @@ if prompt_input:
                 
                 # Iniciar el registro de la interacción
                 interaction_id = logger.start_interaction(
+                    user=st.session_state.user_name,
                     question=prompt_input,
-                    user_name=st.session_state.user_name,
-                    user_agent=user_agent
+                    request_info={"user_agent": user_agent}
                 )
                 
                 # Construir retrieval_chain a demanda si no existe
