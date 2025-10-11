@@ -860,11 +860,33 @@ input[aria-label="Tu Nombre"] {
     background-color: #28a745 !important;
     color: white !important;
     font-weight: bold !important;
+    font-size: 1.1em !important;
+    cursor: text !important;
+    caret-color: white !important;
 }
 div[data-testid="stTextInput"] input {
     background-color: #28a745 !important;
     color: white !important;
     font-weight: bold !important;
+    font-size: 1.1em !important;
+    cursor: text !important;
+    caret-color: white !important;
+}
+/* Placeholder de la casilla de nombre */
+input[aria-label="Tu Nombre"]::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-weight: normal !important;
+}
+div[data-testid="stTextInput"] input::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-weight: normal !important;
+}
+/* Ocultar placeholder al hacer focus en casilla de nombre */
+input[aria-label="Tu Nombre"]:focus::placeholder {
+    opacity: 0 !important;
+}
+div[data-testid="stTextInput"] input:focus::placeholder {
+    opacity: 0 !important;
 }
 </style>
 <div class="title-style">GERARD</div>
