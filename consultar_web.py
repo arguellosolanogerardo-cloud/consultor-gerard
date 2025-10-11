@@ -991,8 +991,8 @@ if not st.session_state.user_name:
                 const viewportHeight = mainSection.clientHeight;
                 const maxScroll = scrollHeight - viewportHeight;
                 
-                // Duración total del scroll en milisegundos (45 segundos para lectura cómoda tipo teleprompter)
-                const duration = 45000;
+                // Duración total del scroll en milisegundos (60 segundos para lectura muy lenta tipo teleprompter)
+                const duration = 60000;
                 const fps = 60;
                 const frameTime = 1000 / fps;
                 const totalFrames = duration / frameTime;
@@ -1238,21 +1238,28 @@ if prompt_input:
                 </div>
                 <script>
                     // Ocultar el texto "PREGUNTA¡..." y el placeholder mientras se muestra "BUSCANDO..."
-                    const preguntaPrompt = window.parent.document.getElementById('pregunta-prompt');
-                    if (preguntaPrompt) {
-                        preguntaPrompt.style.display = 'none';
-                    }
-                    
-                    // Ocultar el placeholder agregando clase Y borrando el atributo
-                    const chatInput = window.parent.document.querySelector('.stChatInput');
-                    const chatTextarea = window.parent.document.querySelector('.stChatInput textarea');
-                    if (chatInput) {
-                        chatInput.classList.add('hide-placeholder');
-                    }
-                    if (chatTextarea) {
-                        chatTextarea.setAttribute('placeholder', '');
-                        chatTextarea.removeAttribute('data-placeholder-set');
-                    }
+                    (function hideElements() {
+                        const preguntaPrompt = window.parent.document.getElementById('pregunta-prompt');
+                        if (preguntaPrompt) {
+                            preguntaPrompt.style.display = 'none';
+                            preguntaPrompt.style.visibility = 'hidden';
+                            preguntaPrompt.style.opacity = '0';
+                        }
+                        
+                        // Ocultar el placeholder agregando clase Y borrando el atributo
+                        const chatInput = window.parent.document.querySelector('.stChatInput');
+                        const chatTextarea = window.parent.document.querySelector('.stChatInput textarea');
+                        if (chatInput) {
+                            chatInput.classList.add('hide-placeholder');
+                        }
+                        if (chatTextarea) {
+                            chatTextarea.setAttribute('placeholder', '');
+                            chatTextarea.removeAttribute('data-placeholder-set');
+                        }
+                        
+                        // Reintentar después de 100ms para asegurar
+                        setTimeout(hideElements, 100);
+                    })();
                 </script>
                 """
                 st.markdown(loader_html, unsafe_allow_html=True)
