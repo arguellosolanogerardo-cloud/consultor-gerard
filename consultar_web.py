@@ -950,6 +950,20 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
         with st.chat_message("assistant", avatar=assistant_avatar):
             response_placeholder = st.empty()
             
+            # Auto-scroll hacia abajo para mostrar "Buscando..." en pantalla
+            scroll_script = """
+            <script>
+                // Esperar un momento para que se renderice el contenido
+                setTimeout(function() {
+                    window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }, 100);
+            </script>
+            """
+            st.markdown(scroll_script, unsafe_allow_html=True)
+            
             # Contenedor temporal para mostrar GIF + texto de carga
             with response_placeholder.container():
                 # GIF ovni centrado (SIN width para mantener animación)
@@ -1067,6 +1081,19 @@ if prompt_input := st.chat_input("Escribe tu pregunta aquí..."):
                 
                 response_placeholder.markdown(response_html, unsafe_allow_html=True)
                 st.session_state.messages.append({"role": "assistant", "content": response_html})
+                
+                # Auto-scroll después de mostrar la respuesta completa
+                scroll_to_bottom = """
+                <script>
+                    setTimeout(function() {
+                        window.scrollTo({
+                            top: document.body.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }, 200);
+                </script>
+                """
+                st.markdown(scroll_to_bottom, unsafe_allow_html=True)
                 
                 # Forzar rerun para mostrar botones inmediatamente después de la primera respuesta
                 st.rerun()
