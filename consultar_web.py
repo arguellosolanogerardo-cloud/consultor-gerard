@@ -1004,6 +1004,70 @@ if 'user_gender' not in st.session_state:
 if 'messages' not in st.session_state:
     st.session_state.messages = []
 
+# ==================== SIDEBAR CON BOTONES DE EXPORTACIÓN ====================
+with st.sidebar:
+    st.markdown("### 📥 Exportar Conversación")
+    
+    if st.session_state.messages:
+        conversation_text = get_conversation_text()
+        file_name = generate_download_filename()
+        
+        # Botón TXT
+        st.download_button(
+            label="📥 Descargar TXT",
+            data=conversation_text,
+            file_name=file_name,
+            mime="text/plain",
+            key="download_txt_sidebar",
+            use_container_width=True,
+            help="Descarga la conversación en formato texto"
+        )
+        
+        # Botón PDF
+        pdf_filename = file_name.rsplit('.', 1)[0] + '.pdf'
+        if REPORTLAB_AVAILABLE:
+            try:
+                user_name_for_file = st.session_state.get('user_name', 'usuario')
+                html_parts = []
+                
+                for msg in st.session_state.messages:
+                    role = msg.get('role')
+                    content_html = msg.get('content', '')
+                    
+                    if role == 'user':
+                        html_parts.append(f'<p style="color: #000000; font-weight: bold;">Pregunta:</p>')
+                        html_parts.append(f'<p style="color: #000000;">{content_html}</p>')
+                    else:
+                        html_parts.append(f'<p style="color: #000000; font-weight: bold;">Respuesta:</p>')
+                        html_parts.append(f'<p>{content_html}</p>')
+                    html_parts.append('<br/>')
+                
+                html_parts.append(f'<br/><p style="color: #28a745;">Usuario: {user_name_for_file}</p>')
+                html_full = ''.join(html_parts)
+                
+                pdf_bytes = generate_pdf_from_html(html_full, title_base=f"Consulta - {user_name_for_file}", user_name=user_name_for_file)
+                
+                st.download_button(
+                    label="📄 Exportar PDF",
+                    data=pdf_bytes,
+                    file_name=pdf_filename,
+                    mime="application/pdf",
+                    key="download_pdf_sidebar",
+                    help="Descarga la conversación en formato PDF",
+                    use_container_width=True
+                )
+            except Exception as e:
+                st.error(f"Error generando PDF: {e}")
+        else:
+            st.info("⚠️ PDF no disponible")
+        
+        st.markdown("---")
+        st.caption(f"💬 {len(st.session_state.messages)} mensajes en la conversación")
+    else:
+        st.info("💡 Inicia una conversación para exportar")
+
+# ============================================================================
+
 if not st.session_state.user_name:
     st.markdown("""
     <p class="intro-text" style="font-size:1.8em; line-height:1.05;">
@@ -1106,86 +1170,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"], unsafe_allow_html=True)
 
-# --- Botones de Exportación (solo si hay conversación) ---
-if st.session_state.messages:
-    st.markdown("---")
-    st.markdown("### 📥 Exportar Conversación")
-    
-    # Script JavaScript para mejorar compatibilidad con móviles
-    st.markdown("""
-    <script>
-    // Forzar descarga en móviles
-    function forceDownload(data, filename, mimeType) {
-        const blob = new Blob([data], { type: mimeType });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-    }
-    </script>
-    """, unsafe_allow_html=True)
-    
-    conversation_text = get_conversation_text()
-    file_name = generate_download_filename()
-    
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        st.download_button(
-            label="📥 Descargar TXT",
-            data=conversation_text,
-            file_name=file_name,
-            mime="text/plain",
-            key="download_txt_bottom",
-            use_container_width=True,
-            help="Toca para descargar el archivo de texto"
-        )
-    
-    with col2:
-        pdf_filename = file_name.rsplit('.', 1)[0] + '.pdf'
-        if REPORTLAB_AVAILABLE:
-            try:
-                user_name_for_file = st.session_state.get('user_name', 'usuario')
-                html_parts = []
-                
-                for msg in st.session_state.messages:
-                    role = msg.get('role')
-                    content_html = msg.get('content', '')
-                    
-                    if role == 'user':
-                        html_parts.append(f'<p style="color: #000000; font-weight: bold;">Pregunta:</p>')
-                        html_parts.append(f'<p style="color: #000000;">{content_html}</p>')
-                    else:
-                        html_parts.append(f'<p style="color: #000000; font-weight: bold;">Respuesta:</p>')
-                        html_parts.append(f'<p>{content_html}</p>')
-                    html_parts.append('<br/>')
-                
-                html_parts.append(f'<br/><p style="color: #28a745;">Usuario: {user_name_for_file}</p>')
-                html_full = ''.join(html_parts)
-                
-                # pdf_filename ya está definido arriba con las preguntas incluidas
-                pdf_bytes = generate_pdf_from_html(html_full, title_base=f"Consulta - {user_name_for_file}", user_name=user_name_for_file)
-                
-                st.download_button(
-                    label="📄 Exportar PDF",
-                    data=pdf_bytes,
-                    file_name=pdf_filename,
-                    mime="application/pdf",
-                    key="download_pdf_bottom",
-                    help="Toca para descargar el archivo PDF",
-                    use_container_width=True
-                )
-            except Exception as e:
-                st.error(f"Error generando PDF: {e}")
-        else:
-            st.warning("⚠️ ReportLab no disponible")
-    
-    st.markdown("---")
+# --- Botones movidos al sidebar para mejor accesibilidad ---
 
 # --- Mostrar GIF de pregunta CASI PEGADO al input (parte inferior) ---
 # Centrar el GIF y dejarlo en tamaño natural para que se anime
