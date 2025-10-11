@@ -957,6 +957,58 @@ if not st.session_state.user_name:
     </p>
     """, unsafe_allow_html=True)
     
+    # Auto-scroll lento tipo teleprompter solo en la primera página
+    components.html(
+        """
+        <script>
+            // Auto-scroll lento tipo teleprompter
+            (function() {
+                const mainSection = window.parent.document.querySelector('section.main');
+                if (!mainSection) return;
+                
+                let currentPosition = 0;
+                const scrollHeight = mainSection.scrollHeight;
+                const viewportHeight = mainSection.clientHeight;
+                const maxScroll = scrollHeight - viewportHeight;
+                
+                // Duración total del scroll en milisegundos (20 segundos para leer todo)
+                const duration = 20000;
+                const fps = 60;
+                const frameTime = 1000 / fps;
+                const totalFrames = duration / frameTime;
+                const pixelsPerFrame = maxScroll / totalFrames;
+                
+                let frameCount = 0;
+                
+                const scrollInterval = setInterval(function() {
+                    if (frameCount >= totalFrames || currentPosition >= maxScroll) {
+                        clearInterval(scrollInterval);
+                        return;
+                    }
+                    
+                    currentPosition += pixelsPerFrame;
+                    mainSection.scrollTo({
+                        top: currentPosition,
+                        behavior: 'auto'  // Sin smooth para control preciso
+                    });
+                    
+                    frameCount++;
+                }, frameTime);
+                
+                // Detener el scroll si el usuario interactúa con la página
+                mainSection.addEventListener('wheel', function() {
+                    clearInterval(scrollInterval);
+                }, { once: true });
+                
+                mainSection.addEventListener('touchstart', function() {
+                    clearInterval(scrollInterval);
+                }, { once: true });
+            })();
+        </script>
+        """,
+        height=0,
+    )
+    
     st.markdown('<div style="text-align:center; margin-top:8px;"><span class="green-pulse">TU NOMBRE</span></div>', unsafe_allow_html=True)
     user_name_input = st.text_input("Tu Nombre", key="name_inputter", label_visibility="collapsed")
     if user_name_input:
