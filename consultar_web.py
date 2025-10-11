@@ -658,6 +658,28 @@ def _strip_html_tags(html: str) -> str:
 # --- Interfaz de Usuario con Streamlit ---
 st.set_page_config(page_title="GERARD", layout="centered")
 
+# Ocultar elementos de la interfaz de Streamlit
+hide_streamlit_style = """
+    <style>
+    /* Ocultar el menú de hamburguesa y header */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Ocultar el footer "Made with Streamlit" */
+    footer {visibility: hidden;}
+    
+    /* Opcional: Ocultar el botón de deploy */
+    .stDeployButton {display:none;}
+    
+    /* Opcional: Reducir el padding superior */
+    .block-container {
+        padding-top: 1rem;
+    }
+    </style>
+"""
+
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # --- Avatares personalizados ---
 user_avatar = "https://api.iconify.design/line-md/question-circle.svg?color=%2358ACFA"
 assistant_avatar = "https://api.iconify.design/mdi/ufo-outline.svg?color=%238A2BE2"
