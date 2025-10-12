@@ -1502,11 +1502,19 @@ if prompt_input:
                         "total_time": (datetime.now() - datetime.fromisoformat(ts.replace(' ', 'T'))).total_seconds()
                     }
                     
+                    # Convertir answer_json a texto limpio para Google Sheets
+                    try:
+                        # Intentar extraer el texto limpio del JSON
+                        answer_for_sheets = get_clean_text_from_json(answer_json)
+                    except:
+                        # Si falla, usar el JSON como string
+                        answer_for_sheets = str(answer_json)
+                    
                     sheets_logger.log_interaction(
                         interaction_id=interaction_id,
                         user=st.session_state.user_name,
                         question=prompt_input,
-                        answer=answer_json,
+                        answer=answer_for_sheets,  # Texto limpio en lugar de JSON
                         device_info=device_info,
                         location_info=location_info,
                         timing=timing_info,
