@@ -688,7 +688,11 @@ def _strip_html_tags(html: str) -> str:
 
 
 # --- Interfaz de Usuario con Streamlit ---
-st.set_page_config(page_title="GERARD", layout="centered")
+st.set_page_config(
+    page_title="GERARD",
+    layout="centered",
+    initial_sidebar_state="expanded"  # Sidebar expandido por defecto
+)
 
 # Ocultar elementos de la interfaz de Streamlit
 hide_streamlit_style = """
@@ -1008,8 +1012,49 @@ if 'messages' not in st.session_state:
 with st.sidebar:
     # Logo/Título del sidebar
     st.markdown("## 🔮 GERARD")
-    st.markdown("### 📥 Exportar Conversación")
     st.markdown("---")
+    
+    # Sección de ayuda - SIEMPRE VISIBLE por defecto
+    with st.expander("❓ **Cómo Hacer Preguntas**", expanded=True):
+        st.markdown("""
+        ### 🎯 CATEGORÍAS DE BÚSQUEDA
+        
+        **1️⃣ Por Tema Específico**
+        - Evacuación, naves, sanación, profecías
+        - Ejemplo: *"¿Qué enseñanzas hay sobre la evacuación?"*
+        
+        **2️⃣ Por Maestro**
+        - ALANISO, AXEL, ADIEL, AZEN, AVIATAR, etc.
+        - Ejemplo: *"¿Qué mensajes dio el Maestro ALANISO?"*
+        
+        **3️⃣ Por Concepto**
+        - Gran Madre, ejercito de luz, túneles dimensionales
+        - Ejemplo: *"Explícame el concepto de la Gran Madre"*
+        
+        **4️⃣ Por Número**
+        - Meditaciones (36-1044), Mensajes (606-1010)
+        - Ejemplo: *"¿De qué trata la Meditación 107?"*
+        
+        ### ✨ Tips Rápidos
+        
+        ✅ **Sé específico** - Menciona maestro o tema concreto  
+        ✅ **Usa palabras clave** - Evacuación, sanación, naves  
+        ✅ **Combina elementos** - "Maestro ALANISO + evacuación"  
+        ✅ **Haz seguimiento** - GERARD recuerda la conversación  
+        
+        ### 🎁 Obtendrás
+        
+        📍 **Fuente exacta** del archivo .srt  
+        ⏱️ **Timestamp preciso** (HH:MM:SS)  
+        📖 **Contexto completo** de la enseñanza  
+        
+        ---
+        
+        📚 **[Ver Guía Completa](https://github.com/arguellosolanogerardo-cloud/consultor-gerard/blob/main/GUIA_MODELOS_PREGUNTA_GERARD.md)** con ejemplos detallados
+        """)
+    
+    st.markdown("---")
+    st.markdown("### 📥 Exportar Conversación")
     
     if st.session_state.messages:
         conversation_text = get_conversation_text()
@@ -1113,6 +1158,9 @@ with st.sidebar:
 # ============================================================================
 
 if not st.session_state.user_name:
+    # Indicador para móviles de dónde está el sidebar
+    st.info("📱 **En móviles:** Toca el icono **☰** en la esquina superior izquierda para ver la **Guía de Preguntas** y **Exportar conversación**", icon="👆")
+    
     st.markdown("""
     <p class="intro-text" style="font-size:1.8em; line-height:1.05;">
     Asistente especializado en los mensajes y meditaciones de los 9 Maestros: <strong>ALANISO, AXEL, ALAN, AZEN, AVIATAR, ALADIM, ADIEL, AZOES Y ALIESTRO</strong> junto a
