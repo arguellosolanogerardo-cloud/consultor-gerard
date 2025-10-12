@@ -1205,18 +1205,11 @@ if not st.session_state.user_name:
     user_name_input = st.text_input("Tu Nombre", key="name_inputter", label_visibility="collapsed")
     if user_name_input:
         st.session_state.user_name = user_name_input.upper()
-        # Detección automática del género desde el nombre
+        # Detección automática del género desde el nombre (sin confirmación)
         detected = detect_gender_from_name(user_name_input)
-        # Permitir confirmar o corregir la detección
-        confirm_options = [detected]
-        for opt in ("Masculino", "Femenino", "No especificar"):
-            if opt not in confirm_options:
-                confirm_options.append(opt)
-
-        chosen = st.selectbox("Detecté el género: seleccione para confirmar o corregir", options=confirm_options, index=0, key="gender_confirm")
-        # Solo hacer rerun si realmente cambió el género
-        if st.session_state.get('user_gender') != chosen:
-            st.session_state.user_gender = chosen
+        # Asignar género automáticamente
+        if st.session_state.get('user_gender') != detected:
+            st.session_state.user_gender = detected
             st.rerun()
 else:
     # Construir bienvenida flexible según género seleccionado
