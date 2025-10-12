@@ -1,17 +1,18 @@
+
 """
 Google Sheets Logger para GERARD
 
-Este módulo envía automáticamente cada interacción a una hoja de Google Sheets
+Este modulo envia automaticamente cada interaccion a una hoja de Google Sheets
 para que puedas ver todos los logs de usuarios en tiempo real desde cualquier lugar.
 
-Características:
-- Registro automático en Google Sheets
-- Columnas: Fecha/Hora, Usuario, Pregunta, Respuesta, Dispositivo, Navegador, OS, Ciudad, País, IP, Tiempo
+Caracteristicas:
+- Registro automatico en Google Sheets
+- Columnas: Fecha/Hora, Usuario, Pregunta, Respuesta, Dispositivo, Navegador, OS, Ciudad, Pais, IP, Tiempo
 - Acceso desde cualquier dispositivo
-- Actualización en tiempo real
-- Sin límites de almacenamiento (hasta 10M celdas)
+- Actualizacion en tiempo real
+- Sin limites de almacenamiento (hasta 10M celdas)
 
-Configuración:
+Configuracion:
 1. Crear un proyecto en Google Cloud Console
 2. Habilitar Google Sheets API
 3. Crear credenciales (Service Account)
@@ -29,7 +30,7 @@ import os
 
 class GoogleSheetsLogger:
     """
-    Logger que envía interacciones a Google Sheets en tiempo real.
+    Logger que envia interacciones a Google Sheets en tiempo real.
     """
     
     def __init__(
@@ -43,8 +44,8 @@ class GoogleSheetsLogger:
         
         Args:
             credentials_file: Ruta al archivo JSON de credenciales
-            spreadsheet_name: Nombre de la hoja de cálculo
-            worksheet_name: Nombre de la pestaña/worksheet
+            spreadsheet_name: Nombre de la hoja de calculo
+            worksheet_name: Nombre de la pestana/worksheet
         """
         self.credentials_file = credentials_file
         self.spreadsheet_name = spreadsheet_name
@@ -59,30 +60,47 @@ class GoogleSheetsLogger:
     def _connect(self):
         """Conecta con Google Sheets."""
         try:
-            # Verificar si existe el archivo de credenciales
-            if not os.path.exists(self.credentials_file):
-                print(f"⚠️  Google Sheets Logger: Archivo de credenciales no encontrado: {self.credentials_file}")
-                print("   Para activar Google Sheets, sigue las instrucciones en GOOGLE_SHEETS_SETUP.md")
-                return
-            
             # Definir el scope
             scope = [
                 'https://spreadsheets.google.com/feeds',
                 'https://www.googleapis.com/auth/drive'
             ]
             
-            # Autenticar
-            creds = ServiceAccountCredentials.from_json_keyfile_name(
-                self.credentials_file,
-                scope
-            )
+            # Intentar obtener credenciales desde Streamlit secrets primero
+            creds = None
+            try:
+                import streamlit as st
+                if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
+                    print("[INFO] Usando credenciales desde Streamlit secrets")
+                    # Usar credenciales desde secrets
+                    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+                        dict(st.secrets['gcp_service_account']),
+                        scope
+                    )
+            except Exception as e:
+                print(f"[INFO] No se pudieron cargar credenciales desde Streamlit secrets: {e}")
+            
+            # Si no hay credenciales desde secrets, intentar archivo local
+            if creds is None:
+                if not os.path.exists(self.credentials_file):
+                    print(f"[!] Google Sheets Logger: Archivo de credenciales no encontrado: {self.credentials_file}")
+                    print("    Para activar Google Sheets, sigue las instrucciones en GOOGLE_SHEETS_SETUP.md")
+                    return
+                
+                print(f"[INFO] Usando credenciales desde archivo local: {self.credentials_file}")
+                # Autenticar desde archivo
+                creds = ServiceAccountCredentials.from_json_keyfile_name(
+                    self.credentials_file,
+                    scope
+                )
+            
             self.client = gspread.authorize(creds)
             
-            # Abrir o crear la hoja de cálculo
+            # Abrir o crear la hoja de calculo
             try:
                 spreadsheet = self.client.open(self.spreadsheet_name)
             except gspread.SpreadsheetNotFound:
-                print(f"⚠️  Hoja '{self.spreadsheet_name}' no encontrada. Créala y compártela con el service account.")
+                print(f"[!] Hoja '{self.spreadsheet_name}' no encontrada. Creala y compartela con el service account.")
                 return
             
             # Abrir o crear el worksheet
@@ -98,11 +116,11 @@ class GoogleSheetsLogger:
                 self._setup_headers()
             
             self.enabled = True
-            print(f"✅ Google Sheets Logger conectado exitosamente: {self.spreadsheet_name}")
+            print(f"[OK] Google Sheets Logger conectado exitosamente: {self.spreadsheet_name}")
             
         except Exception as e:
-            print(f"⚠️  Error conectando con Google Sheets: {e}")
-            print("   El logging continuará localmente sin Google Sheets")
+            print(f"[!] Error conectando con Google Sheets: {e}")
+            print("    El logging continuara localmente sin Google Sheets")
     
     def _setup_headers(self):
         """Configura los encabezados de la hoja."""
@@ -116,7 +134,7 @@ class GoogleSheetsLogger:
             "Navegador",
             "Sistema Operativo",
             "Ciudad",
-            "País",
+            "Pais",
             "IP",
             "Tiempo Respuesta (s)",
             "Estado",
@@ -145,16 +163,16 @@ class GoogleSheetsLogger:
         error: Optional[str] = None
     ):
         """
-        Registra una interacción en Google Sheets.
+        Registra una interaccion en Google Sheets.
         
         Args:
-            interaction_id: ID único de la interacción
+            interaction_id: ID unico de la interaccion
             user: Nombre del usuario
             question: Pregunta realizada
             answer: Respuesta generada
-            device_info: Información del dispositivo
-            location_info: Información de ubicación
-            timing: Información de tiempos
+            device_info: Informacion del dispositivo
+            location_info: Informacion de ubicacion
+            timing: Informacion de tiempos
             success: Si fue exitosa
             error: Mensaje de error si aplica
         """
@@ -167,7 +185,7 @@ class GoogleSheetsLogger:
             timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
             timestamp_unix = int(timestamp.timestamp())
             
-            # Información del dispositivo
+            # Informacion del dispositivo
             device_type = "Desconocido"
             browser = "Desconocido"
             os_type = "Desconocido"
@@ -177,7 +195,7 @@ class GoogleSheetsLogger:
                 browser = device_info.get("browser", "Desconocido")
                 os_type = device_info.get("os", "Desconocido")
             
-            # Información de ubicación
+            # Informacion de ubicacion
             city = "Desconocida"
             country = "Desconocido"
             ip = "No disponible"
@@ -196,7 +214,7 @@ class GoogleSheetsLogger:
             answer_summary = answer[:200] + "..." if len(answer) > 200 else answer
             
             # Estado
-            status = "✅ Exitoso" if success else "❌ Error"
+            status = "[OK] Exitoso" if success else "[ERROR] Error"
             error_msg = error if error else ""
             
             # Crear fila
@@ -221,17 +239,17 @@ class GoogleSheetsLogger:
             # Agregar fila a la hoja
             self.worksheet.append_row(row)
             
-            print(f"✅ Interacción registrada en Google Sheets: {user} - {question[:50]}...")
+            print(f"[OK] Interaccion registrada en Google Sheets: {user} - {question[:50]}...")
             
         except Exception as e:
-            print(f"⚠️  Error registrando en Google Sheets: {e}")
+            print(f"[!] Error registrando en Google Sheets: {e}")
     
     def get_stats(self) -> Dict:
         """
-        Obtiene estadísticas de la hoja.
+        Obtiene estadisticas de la hoja.
         
         Returns:
-            Diccionario con estadísticas
+            Diccionario con estadisticas
         """
         if not self.enabled:
             return {}
@@ -260,17 +278,17 @@ class GoogleSheetsLogger:
             }
             
         except Exception as e:
-            print(f"⚠️  Error obteniendo estadísticas: {e}")
+            print(f"[!] Error obteniendo estadisticas: {e}")
             return {}
 
 
-# Función de ayuda para integración fácil
+# Funcion de ayuda para integracion facil
 def create_sheets_logger() -> Optional[GoogleSheetsLogger]:
     """
     Crea y retorna un logger de Google Sheets.
     
     Returns:
-        GoogleSheetsLogger o None si no está configurado
+        GoogleSheetsLogger o None si no esta configurado
     """
     logger = GoogleSheetsLogger()
     return logger if logger.enabled else None
