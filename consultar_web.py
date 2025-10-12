@@ -1038,7 +1038,48 @@ input[aria-label="Tu Nombre"]:focus::placeholder {
 div[data-testid="stTextInput"] input:focus::placeholder {
     opacity: 0 !important;
 }
+/* Botón de salida en esquina superior derecha */
+.exit-button {
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #8A2BE2 0%, #9D4EDD 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.1em;
+    box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.exit-button:hover {
+    background: linear-gradient(135deg, #9D4EDD 0%, #8A2BE2 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(138, 43, 226, 0.6);
+    text-decoration: none;
+    color: white;
+}
+.exit-button:active {
+    transform: translateY(0);
+}
+/* Responsive para móviles */
+@media screen and (max-width: 768px) {
+    .exit-button {
+        top: 8px;
+        right: 10px;
+        padding: 8px 16px;
+        font-size: 0.9em;
+    }
+}
 </style>
+<a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank" class="exit-button">
+    🏠 Salir
+</a>
 <div class="title-style">GERARD</div>
 """, unsafe_allow_html=True)
 
