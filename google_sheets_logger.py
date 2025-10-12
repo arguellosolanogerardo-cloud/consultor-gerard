@@ -129,7 +129,7 @@ class GoogleSheetsLogger:
             "Fecha/Hora",
             "Usuario",
             "Pregunta",
-            "Respuesta",  # Sin "(Resumen)" - ahora guarda texto completo
+            "Respuesta",
             "Dispositivo",
             "Navegador",
             "Sistema Operativo",
@@ -138,14 +138,13 @@ class GoogleSheetsLogger:
             "IP",
             "Tiempo Respuesta (s)",
             "Estado",
-            "Error",
-            "Timestamp Unix"
+            "Error"
         ]
         
-        self.worksheet.update('A1:O1', [headers])
+        self.worksheet.update('A1:N1', [headers])
         
         # Formatear encabezados (negrita, fondo gris)
-        self.worksheet.format('A1:O1', {
+        self.worksheet.format('A1:N1', {
             'textFormat': {'bold': True},
             'backgroundColor': {'red': 0.9, 'green': 0.9, 'blue': 0.9}
         })
@@ -183,7 +182,6 @@ class GoogleSheetsLogger:
             # Preparar datos
             timestamp = datetime.now()
             timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-            timestamp_unix = int(timestamp.timestamp())
             
             # Informacion del dispositivo
             device_type = "Desconocido"
@@ -232,8 +230,7 @@ class GoogleSheetsLogger:
                 ip,
                 f"{response_time:.2f}",
                 status,
-                error_msg,
-                timestamp_unix
+                error_msg
             ]
             
             # Agregar fila a la hoja
