@@ -697,13 +697,21 @@ st.set_page_config(
 # Ocultar elementos de la interfaz de Streamlit
 hide_streamlit_style = """
     <style>
-    /* Ocultar solo el menú de hamburguesa de Streamlit (NO el botón del sidebar) */
+    /* Ocultar solo el menú de hamburguesa de Streamlit */
     #MainMenu {visibility: hidden !important;}
     
-    /* IMPORTANTE: NO ocultar el header completo para mantener visible el botón del sidebar */
-    /* Solo ocultar elementos específicos dentro del header */
-    header[data-testid="stHeader"] > div:not([data-testid="stSidebarNav"]) {
-        visibility: hidden !important;
+    /* FORZAR que el botón del sidebar sea SIEMPRE visible */
+    button[kind="header"][data-testid="baseButton-header"] {
+        visibility: visible !important;
+        display: block !important;
+        opacity: 1 !important;
+    }
+    
+    /* Asegurar que el control del sidebar sea visible */
+    [data-testid="collapsedControl"] {
+        visibility: visible !important;
+        display: block !important;
+        opacity: 1 !important;
     }
     
     /* Ocultar el footer "Made with Streamlit" */
@@ -711,9 +719,8 @@ hide_streamlit_style = """
     .viewerBadge_container__1QSob {display: none !important;}
     .styles_viewerBadge__1yB5_ {display: none !important;}
     
-    /* Ocultar badges y botones de Streamlit */
+    /* Ocultar badges y botones de Deploy */
     .stDeployButton {display: none !important;}
-    button[kind="header"] {display: none !important;}
     
     /* Reducir el padding superior */
     .block-container {
