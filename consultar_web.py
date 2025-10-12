@@ -697,9 +697,14 @@ st.set_page_config(
 # Ocultar elementos de la interfaz de Streamlit
 hide_streamlit_style = """
     <style>
-    /* Ocultar el menú de hamburguesa y header */
+    /* Ocultar solo el menú de hamburguesa de Streamlit (NO el botón del sidebar) */
     #MainMenu {visibility: hidden !important;}
-    header {visibility: hidden !important;}
+    
+    /* IMPORTANTE: NO ocultar el header completo para mantener visible el botón del sidebar */
+    /* Solo ocultar elementos específicos dentro del header */
+    header[data-testid="stHeader"] > div:not([data-testid="stSidebarNav"]) {
+        visibility: hidden !important;
+    }
     
     /* Ocultar el footer "Made with Streamlit" */
     footer {visibility: hidden !important;}
