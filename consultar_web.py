@@ -1116,37 +1116,6 @@ with st.sidebar:
 # ============================================================================
 
 if not st.session_state.user_name:
-    # Indicador para móviles de dónde está el sidebar - desaparece en 10 segundos
-    st.markdown("""
-    <div id="mobile-hint" style="
-        background-color: #d1ecf1;
-        border: 1px solid #bee5eb;
-        border-radius: 0.25rem;
-        color: #0c5460;
-        padding: 0.75rem 1.25rem;
-        margin-bottom: 1rem;
-        position: relative;
-    ">
-        <strong>� �📱 En móviles:</strong> Toca el icono <strong>☰</strong> en la esquina superior izquierda para ver la <strong>Guía de Preguntas</strong> y <strong>Exportar conversación</strong>
-    </div>
-    <script>
-    // Hacer desaparecer el mensaje después de 10 segundos
-    setTimeout(function() {
-        var mobileHint = document.getElementById('mobile-hint');
-        if (mobileHint) {
-            // Fade out suave
-            mobileHint.style.transition = 'opacity 1s ease-out';
-            mobileHint.style.opacity = '0';
-            
-            // Remover del DOM después del fade
-            setTimeout(function() {
-                mobileHint.style.display = 'none';
-            }, 1000);
-        }
-    }, 10000); // 10 segundos
-    </script>
-    """, unsafe_allow_html=True)
-    
     st.markdown("""
     <p class="intro-text" style="font-size:1.8em; line-height:1.05;">
     Asistente especializado en los mensajes y meditaciones de los 9 Maestros: <strong>ALANISO, AXEL, ALAN, AZEN, AVIATAR, ALADIM, ADIEL, AZOES Y ALIESTRO</strong> junto a
