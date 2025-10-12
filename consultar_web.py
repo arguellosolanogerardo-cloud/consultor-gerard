@@ -707,9 +707,9 @@ hide_streamlit_style = """
     /* Ocultar botón de Deploy */
     .stDeployButton {display: none !important;}
     
-    /* Reducir el padding superior */
+    /* Ajustar padding superior para que no corte el título */
     .block-container {
-        padding-top: 1rem;
+        padding-top: 3rem;
     }
     </style>
     
@@ -765,8 +765,9 @@ st.markdown("""
     font-size: 8em; /* un poco más grande */
     text-align: center;
     color: #8A2BE2; /* Violeta */
-    padding-bottom: 20px;
-    line-height: 0.9;
+    padding: 20px 0 20px 0;
+    margin-top: 10px;
+    line-height: 1.1;
     /* pulso suave (palpitante) */
     animation: pulse-title 2s infinite ease-in-out;
     text-shadow: 0 6px 18px rgba(138,43,226,0.15);
@@ -817,6 +818,27 @@ st.markdown("""
     0% { transform: scale(1); }
     50% { transform: scale(1.06); }
     100% { transform: scale(1); }
+}
+
+/* Responsive: ajustar tamaño del título en móviles */
+@media screen and (max-width: 768px) {
+    .title-style {
+        font-size: 5em !important;
+        padding: 15px 0 15px 0 !important;
+        margin-top: 5px !important;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .title-style {
+        font-size: 4em !important;
+        padding: 10px 0 10px 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    .block-container {
+        padding-top: 2rem !important;
+    }
 }
 
 /* --- ¡NUEVA ANIMACIÓN CSS! --- */
