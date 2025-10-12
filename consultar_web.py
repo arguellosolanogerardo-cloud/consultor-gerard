@@ -1566,11 +1566,12 @@ if prompt_input:
                         if content_type == "emphasis":
                             # Resalta en magenta el texto entre paréntesis, el resto amarillo
                             def magenta_parentheses(text):
-                                return re.sub(r'(\(.*?\))', r'<span style="color:magenta;">\1</span>', text)
+                                return re.sub(r'(\(.*?\))', r'<span style="color:#FF00FF; font-weight: bold;">\1</span>', text)
                             content_colored = magenta_parentheses(content)
                             response_html += f'<span style="color:yellow; background-color: #333; border-radius: 4px; padding: 2px 4px;">{content_colored}</span>'
                         else:
-                            content_html = re.sub(r'(\(.*?\))', r'<span style="color:#87CEFA;">\1</span>', content)
+                            # Cambiar color de fuentes (texto entre paréntesis) a MAGENTA
+                            content_html = re.sub(r'(\(.*?\))', r'<span style="color:#FF00FF; font-weight: bold;">\1</span>', content)
                             response_html += content_html
                 
                 response_placeholder.markdown(response_html, unsafe_allow_html=True)
