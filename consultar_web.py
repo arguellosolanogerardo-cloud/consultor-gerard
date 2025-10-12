@@ -397,16 +397,42 @@ retrieval_chain = None
 
 # --- Funciones de Geolocalización y Registro ---
 @st.cache_data
-def get_user_location() -> str:
+def get_user_location() -> dict:
+    """
+    Obtiene la ubicación del usuario usando ipinfo.io.
+    Retorna un diccionario con los datos de ubicación.
+    """
     try:
         response = requests.get('https://ipinfo.io/json', timeout=5)
         data = response.json()
-        ip = data.get('ip', 'No disponible')
-        city = data.get('city', 'Desconocida')
-        country = data.get('country', 'Desconocido')
-        return f"{city}, {country} (IP: {ip})"
-    except Exception:
-        return "Ubicación no disponible"
+        
+        # Extraer coordenadas si están disponibles
+        loc = data.get('loc', '0,0').split(',')
+        latitude = float(loc[0]) if len(loc) > 0 else 0
+        longitude = float(loc[1]) if len(loc) > 1 else 0
+        
+        return {
+            'ip': data.get('ip', 'No disponible'),
+            'city': data.get('city', 'Desconocida'),
+            'country': data.get('country', 'Desconocido'),
+            'region': data.get('region', ''),
+            'latitude': latitude,
+            'longitude': longitude,
+            'org': data.get('org', ''),
+            'timezone': data.get('timezone', '')
+        }
+    except Exception as e:
+        print(f"[!] Error obteniendo ubicación: {e}")
+        return {
+            'ip': 'No disponible',
+            'city': 'Desconocida',
+            'country': 'Desconocido',
+            'region': '',
+            'latitude': 0,
+            'longitude': 0,
+            'org': '',
+            'timezone': ''
+        }
 
 def get_clean_text_from_json(json_string: str) -> str:
     try:
@@ -1456,17 +1482,26 @@ if prompt_input:
                 # Registrar en Google Sheets si está disponible
                 if sheets_logger:
                     try:
-                        # Obtener información del dispositivo y ubicación para Google Sheets
+                        # Usar información del dispositivo y ubicación ya obtenidos
                         device_detector = DeviceDetector()
                         device_info = device_detector.detect_from_web(user_agent)
+                        print(f"[DEBUG] Device Info: {device_info}")
                         
-                        geo_locator = GeoLocator()
-                        location_info = geo_locator.get_location()
+                        # Usar la ubicación ya obtenida al inicio
+                        location_info = {
+                            "city": location.get("city", "Desconocida") if location else "Desconocida",
+                            "country": location.get("country", "Desconocido") if location else "Desconocido",
+                            "ip": location.get("ip", "No disponible") if location else "No disponible",
+                            "latitude": location.get("latitude", 0) if location else 0,
+                            "longitude": location.get("longitude", 0) if location else 0
+                        }
+                        print(f"[DEBUG] Location Info: {location_info}")
                         
                         # Calcular tiempo de respuesta
                         timing_info = {
                             "total_time": (datetime.now() - datetime.fromisoformat(ts.replace(' ', 'T'))).total_seconds()
                         }
+                        print(f"[DEBUG] Timing Info: {timing_info}")
                         
                         # Convertir answer_json a texto limpio para Google Sheets
                         try:
