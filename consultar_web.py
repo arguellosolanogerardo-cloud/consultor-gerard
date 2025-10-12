@@ -1062,7 +1062,14 @@ with st.sidebar:
     # ============== SECCIÓN 1: EXPORTAR CONVERSACIÓN (PRIMERO) ==============
     st.markdown("### 📥 Exportar Conversación")
     
-    if st.session_state.messages:
+    # Debug: verificar estado de los mensajes
+    num_messages = len(st.session_state.get('messages', []))
+    
+    # Mostrar contador para debug
+    if num_messages > 0:
+        st.caption(f"🔍 Debug: {num_messages} mensajes detectados")
+    
+    if num_messages > 0:
         conversation_text = get_conversation_text()
         file_name = generate_download_filename()
         
@@ -1116,10 +1123,10 @@ with st.sidebar:
             st.info("⚠️ PDF no disponible")
         
         st.markdown("---")
-        st.success(f"💬 **{len(st.session_state.messages)} mensajes** en la conversación")
+        st.success(f"💬 **{num_messages} mensajes** en la conversación")
     else:
         st.info("💡 **Inicia una conversación** para ver los botones de exportación aquí")
-        st.caption("Los botones aparecerán automáticamente después de tu primera pregunta")
+        st.caption(f"Los botones aparecerán automáticamente después de tu primera pregunta (Mensajes actuales: {num_messages})")
     
     # ============== SECCIÓN 2: CÓMO HACER PREGUNTAS (SEGUNDO) ==============
     st.markdown("---")
