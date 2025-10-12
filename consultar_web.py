@@ -1011,46 +1011,7 @@ with st.sidebar:
     st.markdown("## 🔮 GERARD")
     st.markdown("---")
     
-    # Sección de ayuda - SIEMPRE VISIBLE por defecto
-    with st.expander("❓ **Cómo Hacer Preguntas**", expanded=True):
-        st.markdown("""
-        ### 🎯 CATEGORÍAS DE BÚSQUEDA
-        
-        **1️⃣ Por Tema Específico**
-        - Evacuación, naves, sanación, profecías
-        - Ejemplo: *"¿Qué enseñanzas hay sobre la evacuación?"*
-        
-        **2️⃣ Por Maestro**
-        - ALANISO, AXEL, ADIEL, AZEN, AVIATAR, etc.
-        - Ejemplo: *"¿Qué mensajes dio el Maestro ALANISO?"*
-        
-        **3️⃣ Por Concepto**
-        - Gran Madre, ejercito de luz, túneles dimensionales
-        - Ejemplo: *"Explícame el concepto de la Gran Madre"*
-        
-        **4️⃣ Por Número**
-        - Meditaciones (36-1044), Mensajes (606-1010)
-        - Ejemplo: *"¿De qué trata la Meditación 107?"*
-        
-        ### ✨ Tips Rápidos
-        
-        ✅ **Sé específico** - Menciona maestro o tema concreto  
-        ✅ **Usa palabras clave** - Evacuación, sanación, naves  
-        ✅ **Combina elementos** - "Maestro ALANISO + evacuación"  
-        ✅ **Haz seguimiento** - GERARD recuerda la conversación  
-        
-        ### 🎁 Obtendrás
-        
-        📍 **Fuente exacta** del archivo .srt  
-        ⏱️ **Timestamp preciso** (HH:MM:SS)  
-        📖 **Contexto completo** de la enseñanza  
-        
-        ---
-        
-        📚 **[Ver Guía Completa](https://github.com/arguellosolanogerardo-cloud/consultor-gerard/blob/main/GUIA_MODELOS_PREGUNTA_GERARD.md)** con ejemplos detallados
-        """)
-    
-    st.markdown("---")
+    # ============== SECCIÓN 1: EXPORTAR CONVERSACIÓN (PRIMERO) ==============
     st.markdown("### 📥 Exportar Conversación")
     
     if st.session_state.messages:
@@ -1112,9 +1073,9 @@ with st.sidebar:
         st.info("💡 **Inicia una conversación** para ver los botones de exportación aquí")
         st.caption("Los botones aparecerán automáticamente después de tu primera pregunta")
     
-    # Sección de ayuda expandible
+    # ============== SECCIÓN 2: CÓMO HACER PREGUNTAS (SEGUNDO) ==============
     st.markdown("---")
-    with st.expander("❓ **Cómo Hacer Preguntas Efectivas**"):
+    with st.expander("❓ **Cómo Hacer Preguntas**", expanded=True):
         st.markdown("""
         ### 🎯 CATEGORÍAS DE BÚSQUEDA
         
