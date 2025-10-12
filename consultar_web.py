@@ -1164,7 +1164,7 @@ with st.sidebar:
             st.info("⚠️ PDF no disponible")
         
         st.markdown("---")
-        st.success(f"💬 **{num_messages} mensajes** en la conversación")
+        st.success(f"💬 **{num_messages} PREGUNTAS** contestadas")
     else:
         st.info("💡 **Inicia una conversación** para ver los botones de exportación aquí")
         st.caption(f"Los botones aparecerán automáticamente después de tu primera pregunta (Mensajes actuales: {num_messages})")
