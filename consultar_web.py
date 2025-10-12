@@ -1564,6 +1564,9 @@ if prompt_input:
                 response_placeholder.markdown(response_html, unsafe_allow_html=True)
                 st.session_state.messages.append({"role": "assistant", "content": response_html})
                 
+                # Marcar que se agregó un mensaje nuevo para actualizar el sidebar
+                st.session_state['_new_message_added'] = True
+                
                 # Auto-scroll después de mostrar la respuesta completa (más confiable con components.html)
                 components.html(
                     """
@@ -1626,5 +1629,10 @@ if prompt_input:
                     pass  # Si el logger falla, no queremos romper la app
                 
                 response_placeholder.error(f"Ocurrió un error al procesar tu pregunta: {e}")
+
+# Actualizar sidebar si se agregó un mensaje nuevo
+if st.session_state.get('_new_message_added', False):
+    st.session_state['_new_message_added'] = False
+    st.rerun()
 
 
