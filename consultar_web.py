@@ -1510,36 +1510,48 @@ if prompt_input:
                 
                 # Registrar en Google Sheets si está disponible
                 if sheets_logger:
-                    # Obtener información del dispositivo y ubicación para Google Sheets
-                    device_detector = DeviceDetector()
-                    device_info = device_detector.detect_from_web(user_agent)
-                    
-                    geo_locator = GeoLocator()
-                    location_info = geo_locator.get_location()
-                    
-                    # Calcular tiempo de respuesta
-                    timing_info = {
-                        "total_time": (datetime.now() - datetime.fromisoformat(ts.replace(' ', 'T'))).total_seconds()
-                    }
-                    
-                    # Convertir answer_json a texto limpio para Google Sheets
                     try:
-                        # Intentar extraer el texto limpio del JSON
-                        answer_for_sheets = get_clean_text_from_json(answer_json)
-                    except:
-                        # Si falla, usar el JSON como string
-                        answer_for_sheets = str(answer_json)
-                    
-                    sheets_logger.log_interaction(
-                        interaction_id=interaction_id,
-                        user=st.session_state.user_name,
-                        question=prompt_input,
-                        answer=answer_for_sheets,  # Texto limpio en lugar de JSON
-                        device_info=device_info,
-                        location_info=location_info,
-                        timing=timing_info,
-                        success=True
-                    )
+                        # Obtener información del dispositivo y ubicación para Google Sheets
+                        device_detector = DeviceDetector()
+                        device_info = device_detector.detect_from_web(user_agent)
+                        
+                        geo_locator = GeoLocator()
+                        location_info = geo_locator.get_location()
+                        
+                        # Calcular tiempo de respuesta
+                        timing_info = {
+                            "total_time": (datetime.now() - datetime.fromisoformat(ts.replace(' ', 'T'))).total_seconds()
+                        }
+                        
+                        # Convertir answer_json a texto limpio para Google Sheets
+                        try:
+                            # Intentar extraer el texto limpio del JSON
+                            answer_for_sheets = get_clean_text_from_json(answer_json)
+                        except:
+                            # Si falla, usar el JSON como string
+                            answer_for_sheets = str(answer_json)
+                        
+                        print(f"[DEBUG] Enviando a Google Sheets - User: {st.session_state.user_name}, Question: {prompt_input[:50]}...")
+                        
+                        sheets_logger.log_interaction(
+                            interaction_id=interaction_id,
+                            user=st.session_state.user_name,
+                            question=prompt_input,
+                            answer=answer_for_sheets,  # Texto limpio en lugar de JSON
+                            device_info=device_info,
+                            location_info=location_info,
+                            timing=timing_info,
+                            success=True
+                        )
+                        
+                        print(f"[OK] Registro enviado a Google Sheets exitosamente")
+                        
+                    except Exception as e:
+                        print(f"[ERROR] Error al registrar en Google Sheets: {e}")
+                        import traceback
+                        traceback.print_exc()
+                else:
+                    print(f"[INFO] Google Sheets Logger no está disponible o no está habilitado")
                 
                 match = re.search(r'\[.*\]', answer_json, re.DOTALL)
                 if not match:
