@@ -129,7 +129,7 @@ class GoogleSheetsLogger:
             "Fecha/Hora",
             "Usuario",
             "Pregunta",
-            "Respuesta (Resumen)",
+            "Respuesta",  # Sin "(Resumen)" - ahora guarda texto completo
             "Dispositivo",
             "Navegador",
             "Sistema Operativo",
@@ -210,8 +210,8 @@ class GoogleSheetsLogger:
             if timing:
                 response_time = timing.get("total_time", 0)
             
-            # Resumen de la respuesta (primeros 200 caracteres)
-            answer_summary = answer[:200] + "..." if len(answer) > 200 else answer
+            # Guardar la respuesta completa (sin límite de caracteres)
+            answer_full = answer
             
             # Estado
             status = "[OK] Exitoso" if success else "[ERROR] Error"
@@ -223,7 +223,7 @@ class GoogleSheetsLogger:
                 timestamp_str,
                 user,
                 question,
-                answer_summary,
+                answer_full,  # Respuesta completa
                 device_type,
                 browser,
                 os_type,
