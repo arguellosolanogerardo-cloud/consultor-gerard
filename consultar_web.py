@@ -1212,12 +1212,14 @@ if not st.session_state.user_name:
             st.session_state.user_gender = detected
             st.rerun()
 else:
-    # Construir bienvenida según género detectado: BIENVENIDA (femenino) o BIENVENIDO (masculino)
+    # Construir bienvenida según género detectado
     gender = st.session_state.get('user_gender', 'No especificar')
     if gender == 'Femenino':
         bienvenida = 'BIENVENIDA'
-    else:
+    elif gender == 'Masculino':
         bienvenida = 'BIENVENIDO'
+    else:
+        bienvenida = 'BIENVENID@'
 
     st.markdown(f"""
     <div class="welcome-text">{bienvenida} {st.session_state.user_name}</div>
