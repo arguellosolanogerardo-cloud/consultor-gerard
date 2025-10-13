@@ -9,3 +9,5 @@ requests
 gender-guesser
 reportlab
 keyring
+gspread>=5.10.0
+oauth2client>=4.1.3
