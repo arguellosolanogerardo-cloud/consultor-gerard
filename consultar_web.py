@@ -1058,11 +1058,11 @@ with st.sidebar:
     # Botón de salida a Radio Voz del Amor
     st.markdown("""
         <a href="https://radio3lavozdelamor.online/radio3lavozdelamor/" target="_blank" 
-           style="display: block; text-align: center; background: linear-gradient(135deg, #8A2BE2 0%, #9D4EDD 100%); 
+           style="display: block; text-align: center; background: linear-gradient(135deg, #DC143C 0%, #B22222 100%); 
                   color: white; padding: 12px 20px; border-radius: 25px; text-decoration: none; 
                   font-weight: bold; font-size: 1.1em; margin-bottom: 20px;
-                  box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4); transition: all 0.3s ease;">
-            🏠 Salir a Radio
+                  box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4); transition: all 0.3s ease;">
+            🏠 SALIR
         </a>
     """, unsafe_allow_html=True)
     
