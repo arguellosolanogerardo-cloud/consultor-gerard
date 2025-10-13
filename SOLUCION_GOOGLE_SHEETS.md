@@ -8,19 +8,51 @@ Las consultas desde la **aplicación web en Streamlit Cloud** NO se registran en
 - El archivo `google_credentials.json` solo existe en tu computadora local
 - Streamlit Cloud necesita las credenciales configuradas en **Secrets**
 
+## 🔑 IMPORTANTE: Dos APIs Diferentes
+
+### API #1: Google Gemini (LLM) - ✅ YA LA TIENES
+- **Propósito:** Para que GERARD responda preguntas usando Gemini AI
+- **Estado:** YA está configurada (tu app funciona)
+- **Formato:** `GOOGLE_API_KEY = "AIzaSy..."`
+- **Uso:** Llamadas a `ChatGoogleGenerativeAI()`
+
+### API #2: Google Service Account (Sheets) - ❌ FALTA ESTA
+- **Propósito:** Para escribir registros en Google Sheets
+- **Estado:** Solo existe localmente en `google_credentials.json`
+- **Formato:** JSON con `private_key`, `client_email`, etc.
+- **Uso:** `GoogleSheetsLogger()` para guardar conversaciones
+
+**Lo que harás:** Combinar AMBAS en un solo archivo de Secrets para que Streamlit Cloud tenga acceso a las dos.
+
 ## ✅ Solución (Paso a Paso)
 
-### PASO 1: Obtener tu Google API Key
-1. Ve a: https://console.cloud.google.com/apis/credentials
-2. Si no tienes una API Key, créala:
-   - Click en "Create Credentials" → "API Key"
-3. Copia la API Key (algo como: `AIzaSyC...`)
+### PASO 1: Obtener tu Google Gemini API Key (si no la tienes visible)
 
-### PASO 2: Copiar el contenido para Streamlit Secrets
-1. Abre el archivo que acabo de generar: `streamlit_secrets_format.txt`
-2. Copia TODO el contenido
-3. En la línea que dice `GOOGLE_API_KEY = "TU_GOOGLE_API_KEY_AQUI"`
-4. Reemplaza `TU_GOOGLE_API_KEY_AQUI` con tu API Key real
+⚠️ **IMPORTANTE**: Esta es la MISMA API Key que ya usas para que GERARD responda preguntas.
+
+**Opción A - Si ya está configurada en Streamlit Cloud:**
+1. Ve a: https://share.streamlit.io/
+2. Busca tu app → ⋮ → **Settings** → **Secrets**
+3. Si ves algo como `GOOGLE_API_KEY = "AIzaSy..."`, copia ese valor
+4. Ese es el que necesitas usar
+
+**Opción B - Si necesitas obtenerla de nuevo:**
+1. Ve a: https://console.cloud.google.com/apis/credentials
+2. Busca tu API Key existente o crea una nueva
+3. Copia la API Key (empieza con `AIzaSy...`)
+
+### PASO 2: Preparar el archivo de Secrets
+1. Abre el archivo que generé: `streamlit_secrets_format.txt`
+2. En la línea que dice:
+   ```
+   GOOGLE_API_KEY = "TU_GOOGLE_API_KEY_AQUI"
+   ```
+3. Reemplaza `TU_GOOGLE_API_KEY_AQUI` con tu API Key de Gemini (la que ya tienes)
+4. Ejemplo final:
+   ```
+   GOOGLE_API_KEY = "AIzaSyC1234567890abcdefg..."
+   ```
+5. **NO TOQUES** el resto del archivo (las credenciales de Google Sheets ya están correctas)
 
 ### PASO 3: Configurar Secrets en Streamlit Cloud
 1. Ve a tu app: https://share.streamlit.io/
