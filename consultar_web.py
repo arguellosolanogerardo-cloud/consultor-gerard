@@ -280,11 +280,23 @@ LA CLAVE ES EL AMOR
 """)
 
 def get_cleaning_pattern() -> Pattern:
-    texts_to_remove = [
+    # Textos entre corchetes a eliminar
+    bracketed_texts = [
         '[Spanish (auto-generated)]', '[DownSub.com]', '[Música]', '[Aplausos]'
     ]
-    robust_patterns = [r'\[\s*' + re.escape(text[1:-1]) + r'\s*\]' for text in texts_to_remove]
-    return re.compile(r'|'.join(robust_patterns), re.IGNORECASE)
+    # Textos sin corchetes a eliminar
+    plain_texts = [
+        'Spanish_auto_generated'
+    ]
+    
+    # Patrones para textos entre corchetes
+    bracketed_patterns = [r'\[\s*' + re.escape(text[1:-1]) + r'\s*\]' for text in bracketed_texts]
+    # Patrones para textos planos
+    plain_patterns = [re.escape(text) for text in plain_texts]
+    
+    # Combinar todos los patrones
+    all_patterns = bracketed_patterns + plain_patterns
+    return re.compile(r'|'.join(all_patterns), re.IGNORECASE)
 
 cleaning_pattern = get_cleaning_pattern()
 
