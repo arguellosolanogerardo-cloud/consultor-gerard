@@ -1424,11 +1424,8 @@ if prompt_input:
                 # Inicializar Google Sheets Logger
                 sheets_logger = init_sheets_logger()
                 
-                # Debug visible: mostrar estado de Google Sheets Logger
-                if sheets_logger and sheets_logger.enabled:
-                    st.success("✅ Google Sheets Logger activo")
-                else:
-                    st.warning("⚠️ Google Sheets Logger NO activo - revisa los logs")
+                # Debug: imprimir estado en logs (no en UI para no molestar)
+                print(f"[DEBUG UI] Google Sheets Logger enabled: {sheets_logger.enabled if sheets_logger else False}")
                 
                 # Obtener información del dispositivo y ubicación
                 # Obtener user agent del navegador
