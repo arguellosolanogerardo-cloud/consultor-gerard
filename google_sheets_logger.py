@@ -70,18 +70,35 @@ class GoogleSheetsLogger:
             creds = None
             try:
                 import streamlit as st
-                if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
-                    print("[INFO] Usando credenciales desde Streamlit secrets")
-                    # Usar credenciales desde secrets
-                    creds = ServiceAccountCredentials.from_json_keyfile_dict(
-                        dict(st.secrets['gcp_service_account']),
-                        scope
-                    )
+                print(f"[DEBUG] st.secrets disponible: {hasattr(st, 'secrets')}")
+                
+                if hasattr(st, 'secrets'):
+                    print(f"[DEBUG] Claves en st.secrets: {list(st.secrets.keys())}")
+                    
+                    if 'gcp_service_account' in st.secrets:
+                        print("[INFO] Usando credenciales desde Streamlit secrets")
+                        gcp_dict = dict(st.secrets['gcp_service_account'])
+                        print(f"[DEBUG] Claves en gcp_service_account: {list(gcp_dict.keys())}")
+                        
+                        # Usar credenciales desde secrets
+                        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+                            gcp_dict,
+                            scope
+                        )
+                        print("[DEBUG] Credenciales cargadas exitosamente desde secrets")
+                    else:
+                        print("[DEBUG] 'gcp_service_account' NO encontrado en st.secrets")
+                else:
+                    print("[DEBUG] st.secrets NO está disponible")
+                    
             except Exception as e:
-                print(f"[INFO] No se pudieron cargar credenciales desde Streamlit secrets: {e}")
+                print(f"[ERROR] Error cargando credenciales desde Streamlit secrets: {e}")
+                import traceback
+                traceback.print_exc()
             
             # Si no hay credenciales desde secrets, intentar archivo local
             if creds is None:
+                print("[DEBUG] Intentando cargar desde archivo local...")
                 if not os.path.exists(self.credentials_file):
                     print(f"[!] Google Sheets Logger: Archivo de credenciales no encontrado: {self.credentials_file}")
                     print("    Para activar Google Sheets, sigue las instrucciones en GOOGLE_SHEETS_SETUP.md")
