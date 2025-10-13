@@ -444,14 +444,24 @@ def get_clean_text_from_json(json_string: str) -> str:
             print(f"[DEBUG] Convirtiendo {type(json_string)} a JSON string")
             json_string = json.dumps(json_string, ensure_ascii=False)
         
+        # Remover backticks de markdown si existen
+        json_string = re.sub(r'^```json\s*', '', json_string.strip())
+        json_string = re.sub(r'\s*```$', '', json_string.strip())
+        
         match = re.search(r'\[.*\]', json_string, re.DOTALL)
         if not match:
+            print(f"[DEBUG get_clean_text_from_json] No se encontró array JSON")
             return json_string
 
         data = json.loads(match.group(0))
-        return "".join([item.get("content", "") for item in data])
+        # Concatenar todo el contenido de los items
+        clean_text = " ".join([item.get("content", "") for item in data])
+        print(f"[DEBUG get_clean_text_from_json] Texto limpio extraído: {clean_text[:100]}...")
+        return clean_text
     except Exception as ex:
         print(f"[DEBUG get_clean_text_from_json] ERROR: {ex}")
+        import traceback
+        traceback.print_exc()
         return json_string
 
 
@@ -1502,7 +1512,14 @@ if prompt_input:
                     try:
                         # Usar información del dispositivo y ubicación ya obtenidos
                         device_detector = DeviceDetector()
-                        device_info = device_detector.detect_from_web(user_agent)
+                        device_raw = device_detector.detect_from_web(user_agent)
+                        
+                        # Mapear las claves correctamente
+                        device_info = {
+                            "device_type": device_raw.get("tipo", "Desconocido"),
+                            "browser": device_raw.get("navegador", "Desconocido"),
+                            "os": device_raw.get("os", "Desconocido")
+                        }
                         print(f"[DEBUG] Device Info: {device_info}")
                         
                         # Usar la ubicación ya obtenida al inicio
