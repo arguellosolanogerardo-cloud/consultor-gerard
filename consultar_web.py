@@ -1330,7 +1330,8 @@ if prompt_input:
         st.markdown("""
         <div style="text-align: center; margin: 20px 0;">
             <p style="color: red; font-size: 1.3em; font-weight: bold; animation: pulse 1.5s infinite;">
-                INGRESA primero TU NOMBRE en la casilla verde de arriba.
+                INGRESA primero TU NOMBRE<br>
+                en la casilla verde de arriba.
             </p>
         </div>
         """, unsafe_allow_html=True)
