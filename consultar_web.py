@@ -1262,9 +1262,9 @@ if not st.session_state.user_name:
         # Detección automática del género desde el nombre (sin confirmación)
         detected = detect_gender_from_name(user_name_input)
         # Asignar género automáticamente
-        if st.session_state.get('user_gender') != detected:
-            st.session_state.user_gender = detected
-            st.rerun()
+        st.session_state.user_gender = detected
+        # Siempre hacer rerun al ingresar el nombre para mostrar bienvenida
+        st.rerun()
 else:
     # Construir bienvenida según género detectado
     gender = st.session_state.get('user_gender', 'No especificar')
